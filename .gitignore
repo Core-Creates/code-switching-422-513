@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+step2_summary.json
+step2_encoder_sweep.json
+sweep_out*.txt
