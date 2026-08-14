@@ -1,0 +1,11 @@
+{
+  "faults": 337,
+  "constraints": 2405,
+  "worst_class_size": 4,
+  "min_flag_bits": 2,
+  "candidates": 138313,
+  "distinct_coverages": 1706,
+  "single_flag_full_cover": 0,
+  "covering_pairs_found": 0,
+  "verified_best_bad": null
+}

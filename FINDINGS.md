@@ -35,7 +35,7 @@ corrected, **EDITORIAL** is a presentation defect.
 | 12 | Sec. 6.1, Sec. 4 | Qubit count inconsistent. Table 3 says 3 ancillas, but Sec. 4 names `a1..a4` and Sec. 4.5 measures four stabilizers "using one ancilla qubit" each. | WRONG |
 | 13 | Sec. 3.3 | Two nearly identical paragraphs ("One can verify that the output states satisfy all four ... layered on top as shown in Figure 2") appear twice. | EDITORIAL |
 | 14 | Table 1, Table 3 | Table 1 has four empty cells (Phase 1 Effect; Phase 3 X-type, Z-type, and Phase 4 Detection/Correction). Table 3 has an empty data-qubit row and an empty "Code distance improvement" value. | EDITORIAL |
-| 15 | Algorithms 1 and 2 | Captions credit "Keeban Villarreal, 4/20" while the byline lists a sole author. Resolve the attribution before submission. | EDITORIAL |
+| 15 | Byline, Algorithms 1 and 2 | Byline listed one author while Algorithm captions credited a second. RESOLVED: the authors are Corrina Alcoser, Keeban Villarreal and Michael Pendleton. Byline updated; the per-caption credits and the "4/20" working date removed as redundant. Confirm the affiliation line covers all three. | RESOLVED |
 | 16 | Figures 1-4 | The four figures are static images that no longer agree with Sec. 3.3, Sec. 4.4, or Sec. 5.4. Figure 4 depicts a weight-3 error `X1X3X5` from a cascade whose gate list is defect 2. | EDITORIAL |
 
 One hand-typed object in Sec. 3.3 is correct: the 16-term `|0bar>` expansion, which
@@ -191,6 +191,75 @@ The smallest cascade found is 15 CX, which is the number to quote if a resource
 comparison is needed. It is still not 6, and the paper's "approximately 15 CNOT gates"
 for the *entire five-phase protocol* remains wrong by roughly 5x.
 
+---
+
+## Part 3b. Why every flag search failed: a counting bound
+
+The searches above were exploring a family that is provably too small, and one cheap
+computation shows it.
+
+Partition the Phase 3 single-fault locations by their [[5,1,3]] syndrome. There are 16
+classes. Count the logically inequivalent residuals in each:
+
+    distinct residual classes per syndrome: [4,4,4,4,4,4,4,4,4,4,3,3,3,3,3,3]
+    worst class, syndrome (1,0,0,0): 4 inequivalent residuals
+
+A decoder keyed on (syndrome, flag) can only split each syndrome class into `2^b` groups,
+where `b` is the number of flag bits. Separating 4 inequivalent residuals therefore needs
+
+    b >= ceil(log2 4) = 2 flag bits
+
+**No single flag can ever certify this cascade, wherever its couplings are placed.** That
+is placement-independent, it holds for the gate-only and gate+idle fault models alike,
+and it explains all 97,466 failures in Part 3 at a stroke. The manuscript's single flag
+qubit is not merely badly placed; it carries one bit where two are needed.
+
+### Step 3: the widened flag family
+
+Flags with three and four couplings, and couplings touching different data qubits, which
+the bracketing-pair family cannot express. Tractability comes from an algebraic
+prefilter: the data part of the measured flag operator's image is the XOR of per-coupling
+keys, so a necessary condition for a deterministic readout is that those keys cancel. Two
+integer XORs per coupling, no tableau. It cuts the size-3 space from 1,873,200 candidates
+to 6,133, and 97 percent of survivors turn out to be genuinely valid.
+
+Sizes 2 and 3 exhaustive: **17,287 valid flags, 0 certifying**, best still 16 of 16 bad
+buckets. Exactly as the bound predicts.
+
+### Step 4: two flag bits, and how many would actually be needed
+
+With the bound saying 2 bits is the minimum, the question is whether some pair works. We
+recast it as exact set cover. Each constraint is a pair of faults in the same syndrome
+class with inequivalent residuals that must receive different labels; each flag covers
+the constraints where its bit differs; a certifying pair is two flags whose coverage
+unions to everything. Branching on the rarest constraint makes the pair search exact
+rather than quadratic.
+
+| quantity | result |
+|---|---|
+| separation constraints | 2,405 |
+| candidate flags (sizes 2, 3 exhaustive; size 4 capped at 60,000 per kind) | 138,313 |
+| distinct coverage patterns | 1,706 |
+| single flags covering everything | 0 |
+| **pairs covering everything** | **0** |
+| constraints coverable by no flag at all | 0 |
+| greedy cover size | **9 flag bits** |
+
+Every constraint is separable by some flag, so there is no absolute obstruction. The
+obstruction is combinatorial: coverage is spread so thinly that two bits cannot reach it,
+and a greedy cover needs nine. Nine is an upper bound from a heuristic, not the true
+minimum, and the particular nine-flag combination greedy selected is not even jointly
+valid. But the gap between the lower bound of 2 and a greedy cover of 9 is decisive at
+the engineering level: flag-protected re-encoding of this cascade would need roughly an
+order of magnitude more ancillas than the manuscript claims, which puts it well past the
+cost of the teleportation-based switch that Section 6.2 dismisses.
+
+**Recommendation.** Phase 3 should not be flag-protected. Redo the Section 6.2 comparison
+against the corrected counts and adopt either teleportation or a measurement-based switch
+via gauge fixing. The counting bound and the empty pair search are themselves a result
+worth stating: they explain why the obvious construction cannot work, which is more
+useful to a reader than another circuit that happens to fail.
+
 ### What this does NOT establish
 
 Stated explicitly so it cannot be over-read:
@@ -200,6 +269,9 @@ Stated explicitly so it cannot be over-read:
   synthesis from the 24 stabilizer bijections. Stim's `graph_state` synthesis method
   was excluded because it emits reset operations and so is not a unitary re-encoder.
 - The two-flag stage was run only on the default bijection, not on all 24 cascades.
+- Size-4 flags were capped at 60,000 candidates per kind; sizes 2 and 3 are exhaustive.
+  The greedy cover size of 9 is a heuristic upper bound, not the true minimum number of
+  flag bits, and no lower bound above 2 has been proved.
 - The two-flag stage searches only pairs drawn from the 30 best singles, not all
   ~6 million valid pairs. This is a bounded search, and the bound is logged.
 - Flags with more than two CNOTs, flags coupling to more than one data qubit, and

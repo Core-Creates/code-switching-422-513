@@ -201,6 +201,19 @@ def paulis_on(k, max_weight=None):
         yield combo
 
 
+def normalize(design):
+    """A flag is (kind, couplings) with couplings = ((slot, qubit), ...) and at least two
+    of them. The legacy bracketing-pair form (kind, d, t1, t2) is still accepted."""
+    out = []
+    for f in design:
+        if len(f) == 4 and isinstance(f[1], int):
+            kind, d, t1, t2 = f
+            out.append((kind, ((t1, d), (t2, d))))
+        else:
+            out.append((f[0], tuple((int(t), int(q)) for t, q in f[1])))
+    return tuple(out)
+
+
 # ==================================================================== encoder
 class Encoder:
     def __init__(self, circuit, pairs=None, arity_overrides=None, macros=None, nq=None):
@@ -229,10 +242,11 @@ class Encoder:
 
     def build(self, design):
         ins = {}
+        design = normalize(design)
         nq = 5 + len(design)
-        for k, (kind, d, t1, t2) in enumerate(design):
+        for k, (kind, coups) in enumerate(design):
             f = FLAG0 + k
-            for t in (t1, t2):
+            for t, d in coups:
                 tg = [d, f] if kind == "X" else [f, d]
                 ins.setdefault(t, []).append(op_from_instruction("CX", tg, nq))
         ops = []
@@ -258,7 +272,7 @@ class Encoder:
 
     def valid(self, design, tabs, nq):
         full = tabs[0]
-        for k, (kind, d, t1, t2) in enumerate(design):
+        for k, (kind, coups) in enumerate(normalize(design)):
             meas = stim.PauliString(nq)
             meas[FLAG0 + k] = 3 if kind == "X" else 1
             if full(meas) != meas:
@@ -275,7 +289,7 @@ class Encoder:
         tabs, IMG = self.images(ops, nq)
         if design and not self.valid(design, tabs, nq):
             return None
-        kinds = [k for k, _, _, _ in design]
+        kinds = [k for k, _ in normalize(design)]
         out = []
 
         def emit(label, slot, comps):
@@ -299,7 +313,7 @@ class Encoder:
                 emit(f"g{i}:{op.label} {''.join(combo)}", i + 1,
                      [(q, c) for q, c in zip(op.support, combo) if c != "I"])
         emit("prep X on q5", 0, [(4, "X")])
-        for k, (kind, d, t1, t2) in enumerate(design):
+        for k, (kind, coups) in enumerate(normalize(design)):
             emit(f"prep flag{k}", 0, [(FLAG0 + k, "X" if kind == "X" else "Z")])
         if include_idle:
             for slot in range(len(ops) + 1):
@@ -347,3 +361,131 @@ def single_flag_search(enc, include_idle=False, max_weight=None, strict_only=Fal
                     if bestB is None or badB < bestB[0]:
                         bestB = (badB, design, nfl)
     return nvalid, bestA, bestB
+
+
+# ================================================ widened flag family search
+def coupling_keys(enc, kind):
+    """For a flag of the given kind, the DATA part of the measured flag operator's image
+    is the product over couplings of the base-suffix image of one generator:
+
+      kind 'X': f is the CNOT target, so Z_f -> Z_d Z_f at each coupling; the key is the
+                base-suffix image of Z_d.
+      kind 'Z': f is the CNOT control, so X_f -> X_f X_d at each coupling; the key is the
+                base-suffix image of X_d.
+
+    Validity requires the flag readout to be deterministic in the fault-free run, so that
+    data part must vanish: the XOR of the keys over all couplings must be zero. That is a
+    necessary condition, checkable with two integer XORs per coupling and no tableau, and
+    it is what makes the widened family tractable. Sufficiency is still decided by
+    Encoder.valid()."""
+    ident = stim.Circuit()
+    ident.append("I", list(range(5)))
+    tabs = [None] * (enc.n + 1)
+    tabs[enc.n] = stim.Tableau.from_circuit(ident)
+    for i in range(enc.n - 1, -1, -1):
+        c = stim.Circuit()
+        c.append("I", list(range(5)))
+        c += enc.base[i].circ
+        tabs[i] = stim.Tableau.from_circuit(c).then(tabs[i + 1])
+    keys = {}
+    for t in range(enc.n + 1):
+        for d in range(5):
+            gen = tabs[t].z_output(d) if kind == "X" else tabs[t].x_output(d)
+            keys[(t, d)] = masks(gen, 5)
+    return keys
+
+
+def _has_zero_sum_proper_subset(keys, subset):
+    """True if some proper sub-subset already cancels, i.e. the design is just a smaller
+    flag with redundant couplings bolted on rather than a genuinely new gadget."""
+    for r in range(2, len(subset)):
+        for sub in itertools.combinations(subset, r):
+            x = z = 0
+            for it in sub:
+                kx, kz = keys[it]
+                x ^= kx
+                z ^= kz
+            if (x, z) == (0, 0):
+                return True
+    return False
+
+
+def zero_sum_subsets(keys, size, cap=None, primitive=False):
+    """All subsets of `size` couplings whose keys XOR to zero. With primitive=True,
+    subsets containing a smaller cancelling subset are skipped."""
+    items = sorted(keys)
+    n = len(items)
+    found = 0
+    if size == 2:
+        by_key = {}
+        for it in items:
+            by_key.setdefault(keys[it], []).append(it)
+        for group in by_key.values():
+            for a, b in itertools.combinations(group, 2):
+                yield (a, b)
+                found += 1
+                if cap and found >= cap:
+                    return
+    elif size == 3:
+        by_key = {}
+        for it in items:
+            by_key.setdefault(keys[it], []).append(it)
+        for i in range(n):
+            for j in range(i + 1, n):
+                ka, kb = keys[items[i]], keys[items[j]]
+                need = (ka[0] ^ kb[0], ka[1] ^ kb[1])
+                for c in by_key.get(need, ()):
+                    if c > items[j]:
+                        cand = (items[i], items[j], c)
+                        if primitive and _has_zero_sum_proper_subset(keys, cand):
+                            continue
+                        yield cand
+                        found += 1
+                        if cap and found >= cap:
+                            return
+    elif size == 4:
+        pair_key = {}
+        for i in range(n):
+            for j in range(i + 1, n):
+                ka, kb = keys[items[i]], keys[items[j]]
+                pair_key.setdefault((ka[0] ^ kb[0], ka[1] ^ kb[1]), []).append(
+                    (items[i], items[j]))
+        for group in pair_key.values():
+            for (a, b), (c, d) in itertools.combinations(group, 2):
+                if len({a, b, c, d}) == 4:
+                    cand = tuple(sorted((a, b, c, d)))
+                    if primitive and _has_zero_sum_proper_subset(keys, cand):
+                        continue
+                    yield cand
+                    found += 1
+                    if cap and found >= cap:
+                        return
+    else:
+        raise ValueError("size must be 2, 3 or 4")
+
+
+def wide_search(enc, sizes=(2, 3, 4), kinds=("X", "Z"), cap=None, log=print,
+                primitive=True):
+    """Search the widened single-flag family. Returns (stats, results) where results is
+    a list of (bad_buckets, design, n_flagged, n_faults) sorted best first."""
+    results = []
+    stats = {}
+    for kind in kinds:
+        keys = coupling_keys(enc, kind)
+        for size in sizes:
+            n_cand = n_valid = 0
+            for subset in zero_sum_subsets(keys, size, cap, primitive):
+                n_cand += 1
+                design = ((kind, tuple(subset)),)
+                f = enc.faults(design)
+                if f is None:
+                    continue
+                n_valid += 1
+                bad, nfl, ntot, _, _ = evaluate(f, False)
+                results.append((bad, design, nfl, ntot))
+            stats[(kind, size)] = (n_cand, n_valid)
+            if log:
+                log(f"   kind {kind}, {size} couplings: {n_cand} passed the algebraic "
+                    f"prefilter, {n_valid} are valid flags")
+    results.sort(key=lambda r: (r[0], len(r[1][0][1])))
+    return stats, results

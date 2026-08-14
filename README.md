@@ -48,9 +48,21 @@ post-selection is therefore load-bearing, and the protocol is a state-preparatio
 factory unless discard-and-restart is replaced by frame updates.
 
 **Step 2 is a negative result.** Across all 24 stabilizer bijections (cascades of 15 to
-25 CX) and 97,466 valid single-flag designs, none certifies Phase 3. The best leaves 14
-of 16 buckets mixing logically inequivalent residuals. This closes the
-"one or two bracketing-pair flags" family and forces a different Phase 3 structure.
+25 CX) and 97,466 valid single-flag designs, none certifies Phase 3.
+
+**Steps 3 and 4 explain why, and close the flag approach.** A counting bound settles it
+without any search: partition the Phase 3 faults by syndrome, and every one of the 16
+classes holds 3 or 4 logically inequivalent residuals. A decoder keyed on
+(syndrome, flag) splits each class into at most `2^b` groups, so at least 2 flag bits are
+necessary wherever the couplings go. The manuscript's single flag carries one bit where
+two are needed. Widening the family to three- and four-coupling flags across different
+data qubits (17,287 valid designs, exhaustive at sizes 2 and 3) still certifies nothing,
+exactly as the bound predicts. Recasting two-bit designs as exact set cover over 2,405
+separation constraints and 1,706 distinct coverage patterns finds no covering pair at
+all, and a greedy cover needs 9 flag bits. The gap between a lower bound of 2 and a
+greedy cover of 9 puts flag-protected re-encoding well past the cost of the
+teleportation-based switch that Section 6.2 dismisses.
+
 See FINDINGS.md for what this does and does not establish.
 
 ## Fault model
