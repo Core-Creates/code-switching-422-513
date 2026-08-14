@@ -1,0 +1,96 @@
+{
+  "certified": {
+    "rows": [
+      {
+        "p": 0.001,
+        "acceptance": 0.79885,
+        "accepted": 3195400,
+        "errors": 19,
+        "p_logical": 5.9460474431996e-06
+      },
+      {
+        "p": 0.002,
+        "acceptance": 0.63873875,
+        "accepted": 2554955,
+        "errors": 75,
+        "p_logical": 2.9354724447201613e-05
+      },
+      {
+        "p": 0.003,
+        "acceptance": 0.51066375,
+        "accepted": 2042655,
+        "errors": 128,
+        "p_logical": 6.266354328068127e-05
+      },
+      {
+        "p": 0.005,
+        "acceptance": 0.326022,
+        "accepted": 1304088,
+        "errors": 250,
+        "p_logical": 0.00019170485427363797
+      },
+      {
+        "p": 0.007,
+        "acceptance": 0.2086405,
+        "accepted": 834562,
+        "errors": 292,
+        "p_logical": 0.0003498841308374932
+      },
+      {
+        "p": 0.01,
+        "acceptance": 0.10671025,
+        "accepted": 426841,
+        "errors": 355,
+        "p_logical": 0.0008316914260813746
+      }
+    ],
+    "slope": 2.1113916269127353
+  },
+  "M1 flag removed": {
+    "rows": [
+      {
+        "p": 0.001,
+        "acceptance": 0.80845275,
+        "accepted": 3233811,
+        "errors": 750,
+        "p_logical": 0.00023192450022589448
+      },
+      {
+        "p": 0.002,
+        "acceptance": 0.65336975,
+        "accepted": 2613479,
+        "errors": 1310,
+        "p_logical": 0.0005012475707667825
+      },
+      {
+        "p": 0.003,
+        "acceptance": 0.528863,
+        "accepted": 2115452,
+        "errors": 1584,
+        "p_logical": 0.0007487761480761559
+      },
+      {
+        "p": 0.005,
+        "acceptance": 0.34558925,
+        "accepted": 1382357,
+        "errors": 1910,
+        "p_logical": 0.001381698070758856
+      },
+      {
+        "p": 0.007,
+        "acceptance": 0.22597375,
+        "accepted": 903895,
+        "errors": 1928,
+        "p_logical": 0.0021329911106931668
+      },
+      {
+        "p": 0.01,
+        "acceptance": 0.120031,
+        "accepted": 480124,
+        "errors": 1578,
+        "p_logical": 0.0032866509485049693
+      }
+    ],
+    "slope": 1.1499937860194962
+  }
+}
