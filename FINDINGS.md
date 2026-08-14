@@ -534,3 +534,50 @@ should be stated plainly rather than buried.
 Numerics: logical error rate and acceptance rate versus p. Acceptance is now the number
 that decides practicality, and it is not small: post-selection is load-bearing at every
 stage.
+
+---
+
+## Part 9. Numerics (Step 8)
+
+Circuit-level depolarizing noise, 4,000,000 shots per point, taken from the same
+end-to-end circuit that carries the certificate. Acceptance is the fraction of shots in
+which no detector fires; the logical error rate is measured among accepted shots only.
+
+### Certified protocol
+
+| p | acceptance | accepted shots | logical errors | p_L |
+|---|---|---|---|---|
+| 0.001 | 0.799 | 3,195,400 | 19 | 5.9e-06 |
+| 0.002 | 0.639 | 2,554,955 | 75 | 2.9e-05 |
+| 0.003 | 0.511 | 2,042,655 | 128 | 6.3e-05 |
+| 0.005 | 0.326 | 1,304,088 | 250 | 1.9e-04 |
+| 0.007 | 0.209 | 834,562 | 292 | 3.5e-04 |
+| 0.010 | 0.107 | 426,841 | 355 | 8.3e-04 |
+
+**Fitted slope of log p_L against log p: 2.11.** With the M1 flag removed: **1.15**.
+
+That agreement is the point. The end-to-end enumeration is combinatorial and says no
+single fault produces an undetectable logical error, which forces the leading term to be
+quadratic. The Monte Carlo is statistical and independently measures an exponent of 2.11.
+The crippled variant, which has exactly one single-fault mechanism, measures 1.15. A
+proof and a measured exponent agreeing is worth more than either alone, and a slope near
+1 for the certified protocol would have meant the enumeration missed something.
+
+`p_L` stays below `p` across the whole sampled range, so the pseudothreshold lies above
+1e-2 and outside the window sampled here.
+
+### Acceptance is the practical constraint
+
+Post-selection is load-bearing at four separate stages: A's input verification, B's
+preparation verification, every flag, and the ZZZZ parity of A's destructive readout.
+The cost shows up here and nowhere else:
+
+- at p = 1e-3, roughly 80 percent of shots are accepted, which is workable
+- at p = 1e-2, roughly 11 percent are accepted, so the factory yields about one block in
+  nine
+
+This is the number the draft never had, and it is the one that decides whether the
+protocol is practical. It also confirms the scope forced by Lemma 1: this is a
+state-preparation factory, and its yield is a first-class figure of merit rather than a
+remark. Anyone quoting the gate count without the acceptance rate is quoting half the
+cost.
