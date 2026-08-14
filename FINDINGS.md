@@ -331,3 +331,82 @@ reproduces the arity-1/2 numbers exactly (44 gate locations, 17 CX, 337 fault lo
 8. Generate Figures 1-4 from the same `.stim` file the simulator runs, and script-generate
    every table.
 9. Write in order: theorem, Sec. 3-5, numerics, related work, introduction, abstract last.
+
+---
+
+## Part 6. The teleportation switch (Step 5)
+
+With the flag-protected re-encoding route closed, this is the alternative Section 6.2
+dismissed. It verifies, and its critical gadget certifies.
+
+### The protocol
+
+One-bit teleportation by joint logical measurement, so no cross-code CNOT is needed:
+
+1. verify block A, the [[4,2,2]] block, by measuring XXXX and ZZZZ, post-select
+2. prepare block B, a fresh [[5,1,3]] block, in `|0>_L` and verify it
+3. measure `M1 = X1bar_A (x) Xbar_B = XXII (x) XXXXX`, weight 7
+4. read A out destructively in the Z basis, giving `M2 = Z1bar` and a free ZZZZ check
+5. Pauli frame update on B: `Xbar^(m2 + b5) Zbar^(m1)`
+
+`teleport_switch.py` verifies the ideal identity by sampling: the parities
+`out + a_log + m1` (X basis) and `out + a_log + m2 + b_zbar` (Z basis) are deterministic
+over 4096 shots while every individual outcome is random. Both logical operators
+teleport.
+
+Three structural advantages, and the third is the one that matters:
+
+- **Phase 2 disappears.** The second logical qubit is discarded with the block, so there
+  is no `Z2bar` measurement and defect 1 has nothing to attach to.
+- **A is destroyed.** Its destructive Z readout costs no two-qubit gates and hands back
+  the ZZZZ stabilizer as a free check, so any odd-weight X-type error on A is detected.
+- **The protected object is a Pauli measurement, not an encoder.** Every gate in the
+  cascade is `CX(m -> data)` with the same control, and a flag gadget is `CX(m -> f)`.
+  Gates sharing a control commute, so the flag pair cancels exactly for ANY bracketing.
+  In the re-encoding cascade the intervening gates did not commute with the flag pair,
+  which is why only 3474 of 9900 bracketings were valid flags there. **That is the real
+  reason flags are standard for syndrome extraction and failed for re-encoding.**
+
+### Certificate for the joint measurement
+
+Fault model as elsewhere, plus two corrections that had to be made to make the count
+physical rather than formal: an error lying in the stabilizer group of the state at that
+point is not a fault (X on the ancilla just after the H, where it is in `|+>`), and two
+errors differing by an ancilla-local stabilizer are the same fault (Y there is just Z).
+Reduction is restricted to ancilla-local elements, since a stabilizer touching the data
+blocks, `Zbar_B` for one, would silently relabel the logical class.
+
+| design | fault locations | discarded | surviving | undecodable buckets |
+|---|---|---|---|---|
+| no flag | 113 | 16 | 97 | 9 of 16 |
+| one flag bracketing the cascade | 142 | 83 | 59 | **0 of 16** |
+
+The synthesized decoder is exactly the standard weight-one [[5,1,3]] lookup: each of the
+15 nonzero syndromes maps to the corresponding single-qubit Pauli and the trivial
+syndrome to the identity. That is the signature of a gadget behaving, since it says the
+surviving errors on B really are weight one. A sample of 138 of the 5040 coupling orders
+against all 28 valid brackets yields 407 certifying designs, so the result is not
+delicate.
+
+### Resources
+
+| route | two-qubit gates |
+|---|---|
+| teleportation switch | 59 |
+| flag re-encoding switch | 79 |
+
+The `|0>_L` preparation for B is 26 CX, synthesized from the frame and verified the same
+way the re-encoder was. Section 6.2's claim that teleportation costs more was made
+against a baseline understated fivefold; on the corrected numbers it is cheaper, and it
+is the route that certifies.
+
+### Not yet established
+
+- Fault tolerance of the `|0>_L` preparation for B, which is assumed ideal here. It needs
+  its own verified circuit and certificate.
+- The end-to-end enumeration across all five steps, rather than the joint measurement
+  alone.
+- Reliability of the M1 outcome is handled by repetition; the single-round analysis
+  treats a bare outcome flip with no data error as benign, which is what `r >= 3` and
+  majority vote buy. A separate argument is still owed for the correlated case.
+- The coupling-order search sampled 138 of 5040 orders. Brackets are exhaustive.
