@@ -480,3 +480,57 @@ alternative, it is the only one of the two that works.
 - Numerics: logical error rate and acceptance rate versus p. Acceptance is now the
   interesting one, since 83 of 142 M1 fault locations and 288 of 384 verification fault
   locations lead to a discard.
+
+---
+
+## Part 8. End-to-end enumeration (Step 7): the protocol is fault tolerant
+
+Per-gadget certificates do not compose, and this run proves it: the whole protocol is
+built as one stim circuit with a DETECTOR for every post-selection check and an
+OBSERVABLE_INCLUDE for the teleported logical, and a single fault is dangerous exactly
+when it flips the observable while firing no detector. Stim's detector error model
+enumerates every fault mechanism, so the check is a scan of that model rather than an
+argument.
+
+| logical basis | single-fault mechanisms | undetectable logical errors |
+|---|---|---|
+| Xbar | 609 | **0** |
+| Zbar | 667 | **0** |
+
+**Positive control.** Removing the M1 flag reintroduces a dangerous mechanism, so the
+scan can fail and a clean result carries information. An earlier control that merely
+blinded one arbitrary flag detector returned 0, which proved nothing; it was replaced.
+
+### Three composition gaps the per-gadget certificates could not see
+
+Each of these passed inside its own gadget and failed in context. They are the substance
+of this step.
+
+1. **The `Zbar` frame measurement was unprotected.** It sits between two certified
+   gadgets. Its weight-5 cascade had no flag and no repetition, so one fault could flip
+   `b5`, and a stale frame bit is a logical error. Fixed by flagging it, repeating it,
+   and adding a second B verification round after it, since errors it injects into B
+   would otherwise face no further check before M1 couples to the block.
+2. **No hand-off EC round on B.** Errors injected into B by the M1 cascades were never
+   checked. Fixed with a final verification round, taken noiseless by convention: it
+   stands for the receiving computation's own first error-correction cycle, which is
+   where a real switch hands the block over.
+3. **A's verification was not interleaved with M1.** A Z error landing on A during an M1
+   cascade flips the M1 outcome in every later round identically, so the round-to-round
+   detectors cannot see it. It anticommutes with XXXX, so an interleaved XXXX check
+   between M1 rounds catches it. This is the correlated case that was previously owed as
+   a separate argument; it is now just another fault location.
+
+### Honest resource count
+
+Counted from the circuit: **162 two-qubit gates**, including the noiseless hand-off round.
+This is the real number for a fully certified protocol, against the 70 quoted in Part 7
+for the gadget-level assembly and the 79 for a flag re-encoding route that has no
+certificate at any price. Protection is most of the cost, which is the expected result and
+should be stated plainly rather than buried.
+
+### Remaining
+
+Numerics: logical error rate and acceptance rate versus p. Acceptance is now the number
+that decides practicality, and it is not small: post-selection is load-bearing at every
+stage.
