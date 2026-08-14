@@ -1,0 +1,22 @@
+{
+  "prep_two_qubit_gates": 6,
+  "prep_method": "graph_state",
+  "total_two_qubit_gates": 70,
+  "prep_fault_tally": {
+    "detected": 124,
+    "I": 3,
+    "Z": 3
+  },
+  "verification": {
+    "no flag": {
+      "surviving": 56,
+      "discarded": 208,
+      "bad": 0
+    },
+    "one flag bracketing the cascade": {
+      "surviving": 96,
+      "discarded": 288,
+      "bad": 0
+    }
+  }
+}

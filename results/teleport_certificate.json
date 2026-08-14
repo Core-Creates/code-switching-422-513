@@ -1,0 +1,20 @@
+{
+  "order": [
+    5,
+    6,
+    8,
+    1,
+    7,
+    4,
+    0
+  ],
+  "brackets": [
+    0,
+    1
+  ],
+  "locations": 142,
+  "discarded": 67,
+  "surviving": 75,
+  "buckets": 16,
+  "certifying_designs_found": 407
+}

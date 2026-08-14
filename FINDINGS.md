@@ -35,7 +35,7 @@ corrected, **EDITORIAL** is a presentation defect.
 | 12 | Sec. 6.1, Sec. 4 | Qubit count inconsistent. Table 3 says 3 ancillas, but Sec. 4 names `a1..a4` and Sec. 4.5 measures four stabilizers "using one ancilla qubit" each. | WRONG |
 | 13 | Sec. 3.3 | Two nearly identical paragraphs ("One can verify that the output states satisfy all four ... layered on top as shown in Figure 2") appear twice. | EDITORIAL |
 | 14 | Table 1, Table 3 | Table 1 has four empty cells (Phase 1 Effect; Phase 3 X-type, Z-type, and Phase 4 Detection/Correction). Table 3 has an empty data-qubit row and an empty "Code distance improvement" value. | EDITORIAL |
-| 15 | Algorithms 1 and 2 | Captions credit "Keeban Villarreal, 4/20" while the byline lists a sole author. Resolve the attribution before submission. | EDITORIAL |
+| 15 | Byline, Algorithms 1 and 2 | Byline listed one author while Algorithm captions credited a second. RESOLVED: the authors are Corrina Alcoser, Keeban Villarreal and Michael Pendleton. Byline updated; the per-caption credits and the "4/20" working date removed as redundant. Confirm the affiliation line covers all three. | RESOLVED |
 | 16 | Figures 1-4 | The four figures are static images that no longer agree with Sec. 3.3, Sec. 4.4, or Sec. 5.4. Figure 4 depicts a weight-3 error `X1X3X5` from a cascade whose gate list is defect 2. | EDITORIAL |
 
 One hand-typed object in Sec. 3.3 is correct: the 16-term `|0bar>` expansion, which
@@ -191,6 +191,75 @@ The smallest cascade found is 15 CX, which is the number to quote if a resource
 comparison is needed. It is still not 6, and the paper's "approximately 15 CNOT gates"
 for the *entire five-phase protocol* remains wrong by roughly 5x.
 
+---
+
+## Part 3b. Why every flag search failed: a counting bound
+
+The searches above were exploring a family that is provably too small, and one cheap
+computation shows it.
+
+Partition the Phase 3 single-fault locations by their [[5,1,3]] syndrome. There are 16
+classes. Count the logically inequivalent residuals in each:
+
+    distinct residual classes per syndrome: [4,4,4,4,4,4,4,4,4,4,3,3,3,3,3,3]
+    worst class, syndrome (1,0,0,0): 4 inequivalent residuals
+
+A decoder keyed on (syndrome, flag) can only split each syndrome class into `2^b` groups,
+where `b` is the number of flag bits. Separating 4 inequivalent residuals therefore needs
+
+    b >= ceil(log2 4) = 2 flag bits
+
+**No single flag can ever certify this cascade, wherever its couplings are placed.** That
+is placement-independent, it holds for the gate-only and gate+idle fault models alike,
+and it explains all 97,466 failures in Part 3 at a stroke. The manuscript's single flag
+qubit is not merely badly placed; it carries one bit where two are needed.
+
+### Step 3: the widened flag family
+
+Flags with three and four couplings, and couplings touching different data qubits, which
+the bracketing-pair family cannot express. Tractability comes from an algebraic
+prefilter: the data part of the measured flag operator's image is the XOR of per-coupling
+keys, so a necessary condition for a deterministic readout is that those keys cancel. Two
+integer XORs per coupling, no tableau. It cuts the size-3 space from 1,873,200 candidates
+to 6,133, and 97 percent of survivors turn out to be genuinely valid.
+
+Sizes 2 and 3 exhaustive: **17,287 valid flags, 0 certifying**, best still 16 of 16 bad
+buckets. Exactly as the bound predicts.
+
+### Step 4: two flag bits, and how many would actually be needed
+
+With the bound saying 2 bits is the minimum, the question is whether some pair works. We
+recast it as exact set cover. Each constraint is a pair of faults in the same syndrome
+class with inequivalent residuals that must receive different labels; each flag covers
+the constraints where its bit differs; a certifying pair is two flags whose coverage
+unions to everything. Branching on the rarest constraint makes the pair search exact
+rather than quadratic.
+
+| quantity | result |
+|---|---|
+| separation constraints | 2,405 |
+| candidate flags (sizes 2, 3 exhaustive; size 4 capped at 60,000 per kind) | 138,313 |
+| distinct coverage patterns | 1,706 |
+| single flags covering everything | 0 |
+| **pairs covering everything** | **0** |
+| constraints coverable by no flag at all | 0 |
+| greedy cover size | **9 flag bits** |
+
+Every constraint is separable by some flag, so there is no absolute obstruction. The
+obstruction is combinatorial: coverage is spread so thinly that two bits cannot reach it,
+and a greedy cover needs nine. Nine is an upper bound from a heuristic, not the true
+minimum, and the particular nine-flag combination greedy selected is not even jointly
+valid. But the gap between the lower bound of 2 and a greedy cover of 9 is decisive at
+the engineering level: flag-protected re-encoding of this cascade would need roughly an
+order of magnitude more ancillas than the manuscript claims, which puts it well past the
+cost of the teleportation-based switch that Section 6.2 dismisses.
+
+**Recommendation.** Phase 3 should not be flag-protected. Redo the Section 6.2 comparison
+against the corrected counts and adopt either teleportation or a measurement-based switch
+via gauge fixing. The counting bound and the empty pair search are themselves a result
+worth stating: they explain why the obvious construction cannot work, which is more
+useful to a reader than another circuit that happens to fail.
+
 ### What this does NOT establish
 
 Stated explicitly so it cannot be over-read:
@@ -200,6 +269,9 @@ Stated explicitly so it cannot be over-read:
   synthesis from the 24 stabilizer bijections. Stim's `graph_state` synthesis method
   was excluded because it emits reset operations and so is not a unitary re-encoder.
 - The two-flag stage was run only on the default bijection, not on all 24 cascades.
+- Size-4 flags were capped at 60,000 candidates per kind; sizes 2 and 3 are exhaustive.
+  The greedy cover size of 9 is a heuristic upper bound, not the true minimum number of
+  flag bits, and no lower bound above 2 has been proved.
 - The two-flag stage searches only pairs drawn from the 30 best singles, not all
   ~6 million valid pairs. This is a bounded search, and the bound is logged.
 - Flags with more than two CNOTs, flags coupling to more than one data qubit, and
@@ -259,3 +331,152 @@ reproduces the arity-1/2 numbers exactly (44 gate locations, 17 CX, 337 fault lo
 8. Generate Figures 1-4 from the same `.stim` file the simulator runs, and script-generate
    every table.
 9. Write in order: theorem, Sec. 3-5, numerics, related work, introduction, abstract last.
+
+---
+
+## Part 6. The teleportation switch (Step 5)
+
+With the flag-protected re-encoding route closed, this is the alternative Section 6.2
+dismissed. It verifies, and its critical gadget certifies.
+
+### The protocol
+
+One-bit teleportation by joint logical measurement, so no cross-code CNOT is needed:
+
+1. verify block A, the [[4,2,2]] block, by measuring XXXX and ZZZZ, post-select
+2. prepare block B, a fresh [[5,1,3]] block, in `|0>_L` and verify it
+3. measure `M1 = X1bar_A (x) Xbar_B = XXII (x) XXXXX`, weight 7
+4. read A out destructively in the Z basis, giving `M2 = Z1bar` and a free ZZZZ check
+5. Pauli frame update on B: `Xbar^(m2 + b5) Zbar^(m1)`
+
+`teleport_switch.py` verifies the ideal identity by sampling: the parities
+`out + a_log + m1` (X basis) and `out + a_log + m2 + b_zbar` (Z basis) are deterministic
+over 4096 shots while every individual outcome is random. Both logical operators
+teleport.
+
+Three structural advantages, and the third is the one that matters:
+
+- **Phase 2 disappears.** The second logical qubit is discarded with the block, so there
+  is no `Z2bar` measurement and defect 1 has nothing to attach to.
+- **A is destroyed.** Its destructive Z readout costs no two-qubit gates and hands back
+  the ZZZZ stabilizer as a free check, so any odd-weight X-type error on A is detected.
+- **The protected object is a Pauli measurement, not an encoder.** Every gate in the
+  cascade is `CX(m -> data)` with the same control, and a flag gadget is `CX(m -> f)`.
+  Gates sharing a control commute, so the flag pair cancels exactly for ANY bracketing.
+  In the re-encoding cascade the intervening gates did not commute with the flag pair,
+  which is why only 3474 of 9900 bracketings were valid flags there. **That is the real
+  reason flags are standard for syndrome extraction and failed for re-encoding.**
+
+### Certificate for the joint measurement
+
+Fault model as elsewhere, plus two corrections that had to be made to make the count
+physical rather than formal: an error lying in the stabilizer group of the state at that
+point is not a fault (X on the ancilla just after the H, where it is in `|+>`), and two
+errors differing by an ancilla-local stabilizer are the same fault (Y there is just Z).
+Reduction is restricted to ancilla-local elements, since a stabilizer touching the data
+blocks, `Zbar_B` for one, would silently relabel the logical class.
+
+| design | fault locations | discarded | surviving | undecodable buckets |
+|---|---|---|---|---|
+| no flag | 113 | 16 | 97 | 9 of 16 |
+| one flag bracketing the cascade | 142 | 83 | 59 | **0 of 16** |
+
+The synthesized decoder is exactly the standard weight-one [[5,1,3]] lookup: each of the
+15 nonzero syndromes maps to the corresponding single-qubit Pauli and the trivial
+syndrome to the identity. That is the signature of a gadget behaving, since it says the
+surviving errors on B really are weight one. A sample of 138 of the 5040 coupling orders
+against all 28 valid brackets yields 407 certifying designs, so the result is not
+delicate.
+
+### Resources
+
+| route | two-qubit gates |
+|---|---|
+| teleportation switch | 59 |
+| flag re-encoding switch | 79 |
+
+The `|0>_L` preparation for B is 26 CX, synthesized from the frame and verified the same
+way the re-encoder was. Section 6.2's claim that teleportation costs more was made
+against a baseline understated fivefold; on the corrected numbers it is cheaper, and it
+is the route that certifies.
+
+### Not yet established
+
+- Fault tolerance of the `|0>_L` preparation for B, which is assumed ideal here. It needs
+  its own verified circuit and certificate.
+- The end-to-end enumeration across all five steps, rather than the joint measurement
+  alone.
+- Reliability of the M1 outcome is handled by repetition; the single-round analysis
+  treats a bare outcome flip with no data error as benign, which is what `r >= 3` and
+  majority vote buy. A separate argument is still owed for the correlated case.
+- The coupling-order search sampled 138 of 5040 orders. Brackets are exhaustive.
+
+---
+
+## Part 7. The |0>_L factory (Step 6), and the corrected resource count
+
+The last unproven piece of the teleportation switch. It certifies, and for a reason that
+is worth stating in the paper because it is not obvious.
+
+### B does not need to be in |0>_L
+
+The teleportation identity carries the frame Pauli `Xbar^(m2 + b5) Zbar^(m1)`, where `b5`
+is the recorded outcome of the `Zbar` measurement on B. So B need only be IN THE CODE
+SPACE. Which of the two logical states it holds is recorded, not required. Every single
+fault in preparation therefore falls into one of three cases and there is no fourth:
+
+| outcome of a single prep fault | count |
+|---|---|
+| detected by the g1..g4 syndrome, shot discarded | 124 |
+| a stabilizer, so not an error at all | 3 |
+| a logical operator, absorbed by the frame bit b5 | 3 |
+| **uncorrectable** | **0** |
+
+The preparation circuit itself is **6 two-qubit gates**, from graph-state synthesis
+rather than full-Clifford elimination: only the Z-images are constrained for a state, and
+exploiting that takes it from 26 CX to 6.
+
+Verification cascades were checked the same way. With or without flags, no fault leaves
+the block outside the code space: 288 of 384 discarded with a flag per generator, 96
+surviving, 0 escaping.
+
+**Ordering requirement.** The absorption argument is not a free lunch. The `Zbar` frame
+measurement must be performed AFTER the g1..g4 verification. A logical fault arriving
+after `b5` is recorded leaves the frame bit stale, and a stale frame bit is a logical
+error on the output rather than an absorbed one. This is a real constraint on the
+protocol and it must appear in the theorem, not in a remark.
+
+### Corrected resource count
+
+The figure of 59 quoted in Part 6 did not cost B's verification. Honestly:
+
+| step | two-qubit gates |
+|---|---|
+| verify A: measure XXXX and ZZZZ | 8 |
+| prepare B in |0>_L | 6 |
+| verify B: g1..g4 cascades | 16 |
+| verify B: one flag per generator | 8 |
+| verify B: Zbar frame measurement | 5 |
+| joint M1, weight 7, r = 3 | 21 |
+| M1 flag, r = 3 | 6 |
+| read A out destructively in Z | 0 |
+| **total** | **70** |
+
+Against 79 for the flag re-encoding route. So the two are comparable on gate count, and
+the resource argument is NOT the reason to prefer teleportation. The reason is that this
+one has a certificate and the other cannot have one at any price: the counting bound
+forces at least 2 flag bits, no pair of flags covers the constraints, and greedy needs 9.
+
+That is the honest framing for Section 6.2, and it is the opposite of the draft's claim
+in both directions: teleportation is not more expensive, and it is not merely an
+alternative, it is the only one of the two that works.
+
+### Still open
+
+- End-to-end enumeration across all steps at once, rather than per gadget. Each gadget
+  now has a certificate; composing them is a separate obligation.
+- The correlated case in which one fault both flips an M1 outcome and leaves a data
+  error. Repetition handles the outcome, but the argument is still owed.
+- Numerics: logical error rate and acceptance rate versus p. Acceptance is now the
+  interesting one, since 83 of 142 M1 fault locations and 288 of 384 verification fault
+  locations lead to a discard.

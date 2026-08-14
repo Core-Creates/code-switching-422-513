@@ -74,3 +74,44 @@ def test_exhaustive_single_flag_search_finds_no_certificate(enc):
     assert nvalid == 3474
     assert best_strict[0] == 16
     assert best_postsel[0] == 15
+
+
+# ------------------------------------------------------- counting bound (Step 3/4)
+def test_flag_bit_lower_bound(enc):
+    """Every syndrome class holds 3 or 4 logically inequivalent residuals, so a decoder
+    keyed on (syndrome, flag) needs at least 2 flag bits no matter where the couplings
+    are placed. This is why every single-flag search fails."""
+    for include_idle in (False, True):
+        by_syn = {}
+        for _, e, _ in enc.faults((), include_idle=include_idle):
+            by_syn.setdefault(FS.syndrome(e), set()).add(FS.canon(e))
+        sizes = sorted((len(v) for v in by_syn.values()), reverse=True)
+        assert len(by_syn) == 16
+        assert sizes == [4] * 10 + [3] * 6
+        assert (max(sizes) - 1).bit_length() == 2, "at least 2 flag bits are necessary"
+
+
+def test_widened_family_prefilter_is_selective(enc):
+    """The algebraic prefilter is what makes the widened family tractable."""
+    keys = FS.coupling_keys(enc, "X")
+    assert len(keys) == (enc.n + 1) * 5
+    n2 = sum(1 for _ in FS.zero_sum_subsets(keys, 2))
+    n3 = sum(1 for _ in FS.zero_sum_subsets(keys, 3, primitive=True))
+    assert n2 == 2024 and n3 == 6133
+
+
+def test_multi_coupling_designs_are_supported(enc):
+    """A flag with three couplings on different data qubits is expressible and valid."""
+    keys = FS.coupling_keys(enc, "X")
+    subset = next(iter(FS.zero_sum_subsets(keys, 3, primitive=True)))
+    design = (("X", tuple(subset)),)
+    assert FS.normalize(design) == design
+    assert FS.normalize((("X", 0, 1, 2),)) == (("X", ((1, 0), (2, 0))),)
+
+
+@pytest.mark.slow
+def test_no_widened_single_flag_certifies(enc):
+    stats, results = FS.wide_search(enc, sizes=(2, 3), log=None)
+    assert sum(v for _, v in stats.values()) == 17287
+    assert not any(r[0] == 0 for r in results)
+    assert results[0][0] == 16
