@@ -410,3 +410,73 @@ is the route that certifies.
   treats a bare outcome flip with no data error as benign, which is what `r >= 3` and
   majority vote buy. A separate argument is still owed for the correlated case.
 - The coupling-order search sampled 138 of 5040 orders. Brackets are exhaustive.
+
+---
+
+## Part 7. The |0>_L factory (Step 6), and the corrected resource count
+
+The last unproven piece of the teleportation switch. It certifies, and for a reason that
+is worth stating in the paper because it is not obvious.
+
+### B does not need to be in |0>_L
+
+The teleportation identity carries the frame Pauli `Xbar^(m2 + b5) Zbar^(m1)`, where `b5`
+is the recorded outcome of the `Zbar` measurement on B. So B need only be IN THE CODE
+SPACE. Which of the two logical states it holds is recorded, not required. Every single
+fault in preparation therefore falls into one of three cases and there is no fourth:
+
+| outcome of a single prep fault | count |
+|---|---|
+| detected by the g1..g4 syndrome, shot discarded | 124 |
+| a stabilizer, so not an error at all | 3 |
+| a logical operator, absorbed by the frame bit b5 | 3 |
+| **uncorrectable** | **0** |
+
+The preparation circuit itself is **6 two-qubit gates**, from graph-state synthesis
+rather than full-Clifford elimination: only the Z-images are constrained for a state, and
+exploiting that takes it from 26 CX to 6.
+
+Verification cascades were checked the same way. With or without flags, no fault leaves
+the block outside the code space: 288 of 384 discarded with a flag per generator, 96
+surviving, 0 escaping.
+
+**Ordering requirement.** The absorption argument is not a free lunch. The `Zbar` frame
+measurement must be performed AFTER the g1..g4 verification. A logical fault arriving
+after `b5` is recorded leaves the frame bit stale, and a stale frame bit is a logical
+error on the output rather than an absorbed one. This is a real constraint on the
+protocol and it must appear in the theorem, not in a remark.
+
+### Corrected resource count
+
+The figure of 59 quoted in Part 6 did not cost B's verification. Honestly:
+
+| step | two-qubit gates |
+|---|---|
+| verify A: measure XXXX and ZZZZ | 8 |
+| prepare B in |0>_L | 6 |
+| verify B: g1..g4 cascades | 16 |
+| verify B: one flag per generator | 8 |
+| verify B: Zbar frame measurement | 5 |
+| joint M1, weight 7, r = 3 | 21 |
+| M1 flag, r = 3 | 6 |
+| read A out destructively in Z | 0 |
+| **total** | **70** |
+
+Against 79 for the flag re-encoding route. So the two are comparable on gate count, and
+the resource argument is NOT the reason to prefer teleportation. The reason is that this
+one has a certificate and the other cannot have one at any price: the counting bound
+forces at least 2 flag bits, no pair of flags covers the constraints, and greedy needs 9.
+
+That is the honest framing for Section 6.2, and it is the opposite of the draft's claim
+in both directions: teleportation is not more expensive, and it is not merely an
+alternative, it is the only one of the two that works.
+
+### Still open
+
+- End-to-end enumeration across all steps at once, rather than per gadget. Each gadget
+  now has a certificate; composing them is a separate obligation.
+- The correlated case in which one fault both flips an M1 outcome and leaves a data
+  error. Repetition handles the outcome, but the argument is still owed.
+- Numerics: logical error rate and acceptance rate versus p. Acceptance is now the
+  interesting one, since 83 of 142 M1 fault locations and 288 of 384 verification fault
+  locations lead to a discard.
