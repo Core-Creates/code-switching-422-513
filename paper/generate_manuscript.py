@@ -467,13 +467,15 @@ para(
     "first check when designing flag gadgets, since it is cheap and can rule out an "
     "entire design family in seconds.")
 para(
-    "Limitations. Our searches are bounded and we state the bounds: size-four flags were "
-    "capped, the two-flag stage ran on the default cascade, and the greedy cover of nine "
-    "is an upper bound rather than the true minimum, so no lower bound above two bits is "
-    "proved. The end-to-end certificate covers single faults; we make no claim about "
-    "pairs. The hand-off round is taken noiseless by convention. Optimization of the "
-    "circuits is left for future work, and re-verification after every optimization pass "
-    "is mandatory under our methodology.")
+    f"Limitations. Where a search is bounded we state the bound. The single-flag family "
+    f"is exhaustive at two, three and four couplings, {STEP4['candidates']:,} candidates "
+    f"in total, so the negative result of Section 5 is not an artifact of sampling. The "
+    f"two-flag stage ran on the default cascade rather than all twenty-four, and the "
+    f"greedy cover of nine is an upper bound rather than the true minimum, so no lower "
+    f"bound above two bits is proved. The end-to-end certificate covers single faults; we "
+    f"make no claim about pairs. The hand-off round is taken noiseless by convention. "
+    f"Optimization of the circuits is left for future work, and re-verification after "
+    f"every optimization pass is mandatory under our methodology.")
 
 # --- 11 conclusion ----------------------------------------------------------------------
 heading("11. Conclusion", level=1)

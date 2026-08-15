@@ -238,8 +238,8 @@ rather than quadratic.
 | quantity | result |
 |---|---|
 | separation constraints | 2,405 |
-| candidate flags (sizes 2, 3 exhaustive; size 4 capped at 60,000 per kind) | 138,313 |
-| distinct coverage patterns | 1,706 |
+| candidate flags (sizes 2, 3 and 4, all exhaustive) | 867,694 |
+| distinct coverage patterns | 5,384 |
 | single flags covering everything | 0 |
 | **pairs covering everything** | **0** |
 | constraints coverable by no flag at all | 0 |
@@ -269,9 +269,10 @@ Stated explicitly so it cannot be over-read:
   synthesis from the 24 stabilizer bijections. Stim's `graph_state` synthesis method
   was excluded because it emits reset operations and so is not a unitary re-encoder.
 - The two-flag stage was run only on the default bijection, not on all 24 cascades.
-- Size-4 flags were capped at 60,000 candidates per kind; sizes 2 and 3 are exhaustive.
-  The greedy cover size of 9 is a heuristic upper bound, not the true minimum number of
-  flag bits, and no lower bound above 2 has been proved.
+- The single-flag family is now EXHAUSTIVE at 2, 3 and 4 couplings: the full primitive
+  size-4 space is 849,381 subsets and all of it was searched, so
+  the negative result is not an artifact of sampling. The greedy cover size of 9 remains
+  a heuristic upper bound, not the true minimum, and no lower bound above 2 is proved.
 - The two-flag stage searches only pairs drawn from the 30 best singles, not all
   ~6 million valid pairs. This is a bounded search, and the bound is logged.
 - Flags with more than two CNOTs, flags coupling to more than one data qubit, and
