@@ -140,6 +140,20 @@ B_RESETS, B_OPS = prep_b_ops()
 
 
 def build(prep_basis, noise=0.0, cripple=None):
+    """cripple: a protection name, or a collection of them, to remove. Used by
+    validate_certificate.py to check that each protection is load-bearing."""
+    off = set()
+    if cripple is not None:
+        off = {cripple} if isinstance(cripple, str) else set(cripple)
+
+    class _C:
+        def __eq__(self, other):
+            return other in off
+
+        def __ne__(self, other):
+            return other not in off
+
+    cripple = _C()
     b = Builder(noise)
 
     # --- input block A, given, noiseless (Lemma 1 puts its errors out of scope) -----
@@ -151,14 +165,19 @@ def build(prep_basis, noise=0.0, cripple=None):
     # --- step 1: verify A, post-select ----------------------------------------------
     # flag protected: an unflagged cascade spreads ancilla errors across A, and an
     # even-weight X error on A slips past the ZZZZ readout check while still flipping M2
-    # Repeated: a Z error injected on A DURING the XXXX cascade commutes with the ZZZZ
-    # check that follows it, persists to M1, and biases every repeated M1 round the same
-    # way. Only a later XXXX round catches it.
-    for r in range(2):
-        b.measure_pauli(f"a_xxxx{r}v", on(A, "XXXX"), ANC_A[0], FLG_A[0], (0, 4))
-        b.measure_pauli(f"a_zzzz{r}v", on(A, "ZZZZ"), ANC_A[1], FLG_A[1], (0, 4))
+    # One round only. A second round was carried for a while and ablation showed it to be
+    # pure cost: removing it leaves the certificate intact and raises the yield. The Z
+    # error it was meant to catch is caught by the XXXX checks interleaved into step 3.
+    for r in range(1):
+        b.measure_pauli(f"a_xxxx{r}v", on(A, "XXXX"), ANC_A[0],
+                        None if cripple == "a_flag" else FLG_A[0],
+                        None if cripple == "a_flag" else (0, 4))
+        b.measure_pauli(f"a_zzzz{r}v", on(A, "ZZZZ"), ANC_A[1],
+                        None if cripple == "a_flag" else FLG_A[1],
+                        None if cripple == "a_flag" else (0, 4))
         for tag in (f"a_xxxx{r}v", f"a_zzzz{r}v"):
-            b.detector([tag + "_flag"])
+            if cripple != "a_flag":
+                b.detector([tag + "_flag"])
         b.detector(["a_xxxx0", f"a_xxxx{r}v"])
         b.detector(["a_zzzz0", f"a_zzzz{r}v"])
 
@@ -180,12 +199,13 @@ def build(prep_basis, noise=0.0, cripple=None):
     # rule. Its own cascade must therefore be flagged and repeated, and a second
     # verification round has to follow it: errors this cascade injects into B would
     # otherwise face no further check before M1 couples to the block.
-    for r in range(ROUNDS):
-        b.measure_pauli(f"b_zbar_{r}", on(B, F.OUT_Z), ANC_ZB, FLG_ZB, (0, 5))
-        b.detector([f"b_zbar_{r}_flag"])
+    # Repetition is load-bearing here; a flag on this cascade is not, and neither is a
+    # second B verification round after it. Both were carried and both were shown by
+    # ablation to cost gates and yield while changing nothing.
+    for r in range(1 if cripple == "zbar_repeat" else ROUNDS):
+        b.measure_pauli(f"b_zbar_{r}", on(B, F.OUT_Z), ANC_ZB)
         if r:
             b.detector([f"b_zbar_{r-1}", f"b_zbar_{r}"])
-    verify_b("r1")
 
     # --- step 3: joint logical measurement, repeated --------------------------------
     spec = on(A, A_X1) + on(B, F.OUT_X)
@@ -198,7 +218,7 @@ def build(prep_basis, noise=0.0, cripple=None):
             b.detector([f"m1_{r}_flag"])
         if r:
             b.detector([f"m1_{r-1}", f"m1_{r}"])
-        if r < ROUNDS - 1:
+        if r < ROUNDS - 1 and cripple != "a_interleave":
             # Interleaved XXXX check on A. A Z error landing on q1 or q2 during an M1
             # cascade flips the M1 outcome in EVERY later round identically, so the
             # round-to-round detectors cannot see it. It anticommutes with XXXX, so an
@@ -211,7 +231,8 @@ def build(prep_basis, noise=0.0, cripple=None):
     # Errors injected into B by the M1 cascades face no further check otherwise. This
     # round is NOISELESS by convention: it stands for the receiving computation's own
     # first error-correction cycle, which is where a real switch hands the block over.
-    verify_b("final", noisy=False)
+    if cripple != "handoff":
+        verify_b("final", noisy=False)
 
     # --- step 4: read A out destructively; ZZZZ parity is a free check ---------------
     for i, q in enumerate(A):

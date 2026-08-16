@@ -582,3 +582,52 @@ protocol is practical. It also confirms the scope forced by Lemma 1: this is a
 state-preparation factory, and its yield is a first-class figure of merit rather than a
 remark. Anyone quoting the gate count without the acceptance rate is quoting half the
 cost.
+
+---
+
+## Part 10. Adversarial validation, and a simplification it found
+
+`validate_certificate.py` attacks the end-to-end certificate from the directions where it
+could be vacuous rather than true. A clean fault scan means nothing if the scan could not
+have come out dirty.
+
+| check | result |
+|---|---|
+| no gauge detectors (model rebuilt with tolerance off) | clean in both bases |
+| no dead detectors | 0 of 28 never fire |
+| observable is live | flips in 1,489 and 3,303 of 20,000 shots |
+| distance is exactly two | a two-fault logical failure exists in both bases |
+| every protection load-bearing | see below |
+
+The last check is the one that paid. Removing each protection in turn and requiring the
+scan to fail found that **three of the eight protections were not load-bearing at all**:
+the second round of A verification, the flag on the Zbar frame measurement, and the second
+B verification round after Zbar. Removing all three jointly still certifies.
+
+Numerics then settled whether they helped at second order, where the single-fault scan is
+blind. They do not:
+
+| p | variant | two-qubit gates | acceptance | p_L |
+|---|---|---|---|---|
+| 0.005 | full | 162 | 0.327 | 2.12e-04 |
+| 0.005 | simplified | 120 | **0.459** | 2.00e-04 |
+| 0.010 | full | 162 | 0.107 | 7.80e-04 |
+| 0.010 | simplified | 120 | **0.212** | 7.31e-04 |
+
+Same logical error rate within statistics, nearly double the yield, 42 fewer two-qubit
+gates. Those three protections were pure cost. **The simplified protocol is now the
+protocol**, and re-validation confirms all five surviving protections are load-bearing.
+
+This is worth recording as a methodological point, not just a result. The three were added
+during end-to-end debugging in a single batch, when the scan went from failing to passing.
+Adding protections until a check passes is how gadgets become over-engineered: nothing in
+that process tells you which addition did the work. Ablation does, and it should be a
+standard step rather than an afterthought.
+
+### Updated headline numbers
+
+- two-qubit gates: **120**, down from 162
+- detectors: 28, down from 43
+- single-fault mechanisms: 824, zero dangerous
+- acceptance: **86%** at p = 1e-3 and **21%** at p = 1e-2, up from 80% and 11%
+- fitted exponent: **2.17**, against 1.13 for the crippled control

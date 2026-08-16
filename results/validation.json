@@ -1,0 +1,41 @@
+{
+  "strict_model_clean": true,
+  "dead_detectors_X": 0,
+  "observable_flips_X": 1361,
+  "dead_detectors_Z": 0,
+  "observable_flips_Z": 2499,
+  "ablations": {
+    "None": {
+      "X": 0,
+      "Z": 0,
+      "verdict": "certified"
+    },
+    "m1_flag": {
+      "X": 0,
+      "Z": 1,
+      "verdict": "load-bearing"
+    },
+    "a_flag": {
+      "X": 0,
+      "Z": 1,
+      "verdict": "load-bearing"
+    },
+    "a_interleave": {
+      "X": 1,
+      "Z": 0,
+      "verdict": "load-bearing"
+    },
+    "zbar_repeat": {
+      "X": 0,
+      "Z": 1,
+      "verdict": "load-bearing"
+    },
+    "handoff": {
+      "X": 1,
+      "Z": 1,
+      "verdict": "load-bearing"
+    }
+  },
+  "distance2_exists_X": true,
+  "distance2_exists_Z": true
+}

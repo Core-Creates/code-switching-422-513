@@ -54,5 +54,7 @@ def test_acceptance_rate_is_reported_and_falls_with_p(saved):
     and must decrease monotonically in p."""
     accs = [r["acceptance"] for r in saved["certified"]["rows"]]
     assert accs == sorted(accs, reverse=True)
-    assert accs[0] > 0.75          # p = 1e-3
-    assert accs[-1] < 0.15         # p = 1e-2
+    assert accs[0] > 0.80          # p = 1e-3
+    assert accs[-1] < 0.30         # p = 1e-2
+    # the simplified protocol nearly doubled the yield at p = 1e-2
+    assert accs[-1] > 0.15
