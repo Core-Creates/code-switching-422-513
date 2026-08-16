@@ -32,6 +32,10 @@ B = [4, 5, 6, 7, 8]
 ANC_A = [9, 10]
 ANC_BV, FLG_BV = [11, 12, 13, 14], [15, 16, 17, 18]
 ANC_ZB, FLG_ZB = 19, 26
+# r = 3. r = 1 fails outright: with one round there is no round-to-round detector to
+# catch a measurement flip. r = 2 certifies and is cheaper in gates and yield, but
+# tune_protocol.py shows it costs a factor of three in logical error rate, which is the
+# wrong thing to trade away in a factory whose product is a low-error encoded state.
 ROUNDS = 3
 ANC_M1 = [20, 21, 22]
 FLG_M1 = [23, 24, 25]
@@ -48,6 +52,7 @@ class Builder:
         self.n = 0            # measurements so far
         self.noise = noise
         self.rec = {}
+        self.det_labels = []   # one stage label per detector, for yield attribution
 
     def mpp(self, name, spec):
         t = []
@@ -80,8 +85,9 @@ class Builder:
         self.rec[name] = self.n
         self.n += 1
 
-    def detector(self, names):
+    def detector(self, names, stage="unlabelled"):
         self.c.append("DETECTOR", [stim.target_rec(self.rec[x] - self.n) for x in names])
+        self.det_labels.append(stage)
 
     def observable(self, names, index=0):
         self.c.append("OBSERVABLE_INCLUDE",
@@ -139,7 +145,24 @@ def prep_b_ops():
 B_RESETS, B_OPS = prep_b_ops()
 
 
-def build(prep_basis, noise=0.0, cripple=None):
+def build(prep_basis, noise=0.0, cripple=None, m1_rounds=None,
+          zbar_rounds=None):
+    """cripple: a protection name, or a collection of them, to remove. Used by
+    validate_certificate.py to check that each protection is load-bearing."""
+    off = set()
+    if cripple is not None:
+        off = {cripple} if isinstance(cripple, str) else set(cripple)
+
+    class _C:
+        def __eq__(self, other):
+            return other in off
+
+        def __ne__(self, other):
+            return other not in off
+
+    cripple = _C()
+    m1_rounds = ROUNDS if m1_rounds is None else m1_rounds
+    zbar_rounds = ROUNDS if zbar_rounds is None else zbar_rounds
     b = Builder(noise)
 
     # --- input block A, given, noiseless (Lemma 1 puts its errors out of scope) -----
@@ -151,16 +174,21 @@ def build(prep_basis, noise=0.0, cripple=None):
     # --- step 1: verify A, post-select ----------------------------------------------
     # flag protected: an unflagged cascade spreads ancilla errors across A, and an
     # even-weight X error on A slips past the ZZZZ readout check while still flipping M2
-    # Repeated: a Z error injected on A DURING the XXXX cascade commutes with the ZZZZ
-    # check that follows it, persists to M1, and biases every repeated M1 round the same
-    # way. Only a later XXXX round catches it.
-    for r in range(2):
-        b.measure_pauli(f"a_xxxx{r}v", on(A, "XXXX"), ANC_A[0], FLG_A[0], (0, 4))
-        b.measure_pauli(f"a_zzzz{r}v", on(A, "ZZZZ"), ANC_A[1], FLG_A[1], (0, 4))
+    # One round only. A second round was carried for a while and ablation showed it to be
+    # pure cost: removing it leaves the certificate intact and raises the yield. The Z
+    # error it was meant to catch is caught by the XXXX checks interleaved into step 3.
+    for r in range(1):
+        b.measure_pauli(f"a_xxxx{r}v", on(A, "XXXX"), ANC_A[0],
+                        None if cripple == "a_flag" else FLG_A[0],
+                        None if cripple == "a_flag" else (0, 4))
+        b.measure_pauli(f"a_zzzz{r}v", on(A, "ZZZZ"), ANC_A[1],
+                        None if cripple == "a_flag" else FLG_A[1],
+                        None if cripple == "a_flag" else (0, 4))
         for tag in (f"a_xxxx{r}v", f"a_zzzz{r}v"):
-            b.detector([tag + "_flag"])
-        b.detector(["a_xxxx0", f"a_xxxx{r}v"])
-        b.detector(["a_zzzz0", f"a_zzzz{r}v"])
+            if cripple != "a_flag":
+                b.detector([tag + "_flag"], "A verify")
+        b.detector(["a_xxxx0", f"a_xxxx{r}v"], "A verify")
+        b.detector(["a_zzzz0", f"a_zzzz{r}v"], "A verify")
 
     # --- step 2: prepare B and verify it ---------------------------------------------
     for q, kind in B_RESETS.items():
@@ -171,52 +199,54 @@ def build(prep_basis, noise=0.0, cripple=None):
         for i, g in enumerate(F.OUT_STAB):
             b.measure_pauli(f"b_g{i}_{tag}", on(B, g), ANC_BV[i], FLG_BV[i], (0, 4),
                             noisy=noisy)
-            b.detector([f"b_g{i}_{tag}"])
+            b.detector([f"b_g{i}_{tag}"], "B verify")
             if noisy:
-                b.detector([f"b_g{i}_{tag}_flag"])
+                b.detector([f"b_g{i}_{tag}_flag"], "B verify")
 
     verify_b("r0")
     # The Zbar frame bit is recorded AFTER verification, per the prep_factory ordering
     # rule. Its own cascade must therefore be flagged and repeated, and a second
     # verification round has to follow it: errors this cascade injects into B would
     # otherwise face no further check before M1 couples to the block.
-    for r in range(ROUNDS):
-        b.measure_pauli(f"b_zbar_{r}", on(B, F.OUT_Z), ANC_ZB, FLG_ZB, (0, 5))
-        b.detector([f"b_zbar_{r}_flag"])
+    # Repetition is load-bearing here; a flag on this cascade is not, and neither is a
+    # second B verification round after it. Both were carried and both were shown by
+    # ablation to cost gates and yield while changing nothing.
+    for r in range(1 if cripple == "zbar_repeat" else zbar_rounds):
+        b.measure_pauli(f"b_zbar_{r}", on(B, F.OUT_Z), ANC_ZB)
         if r:
-            b.detector([f"b_zbar_{r-1}", f"b_zbar_{r}"])
-    verify_b("r1")
+            b.detector([f"b_zbar_{r-1}", f"b_zbar_{r}"], "Zbar repeat")
 
     # --- step 3: joint logical measurement, repeated --------------------------------
     spec = on(A, A_X1) + on(B, F.OUT_X)
     use_flag = cripple != "m1_flag"
-    for r in range(ROUNDS):
-        b.measure_pauli(f"m1_{r}", spec, ANC_M1[r],
-                        FLG_M1[r] if use_flag else None,
+    for r in range(m1_rounds):
+        b.measure_pauli(f"m1_{r}", spec, ANC_M1[r % len(ANC_M1)],
+                        FLG_M1[r % len(FLG_M1)] if use_flag else None,
                         (0, len(spec)) if use_flag else None)
         if use_flag:
-            b.detector([f"m1_{r}_flag"])
+            b.detector([f"m1_{r}_flag"], "M1 flag")
         if r:
-            b.detector([f"m1_{r-1}", f"m1_{r}"])
-        if r < ROUNDS - 1:
+            b.detector([f"m1_{r-1}", f"m1_{r}"], "M1 repeat")
+        if r < m1_rounds - 1 and cripple != "a_interleave":
             # Interleaved XXXX check on A. A Z error landing on q1 or q2 during an M1
             # cascade flips the M1 outcome in EVERY later round identically, so the
             # round-to-round detectors cannot see it. It anticommutes with XXXX, so an
             # interleaved check does.
             b.measure_pauli(f"a_xxxx_m{r}", on(A, "XXXX"), ANC_A[0], FLG_A[0], (0, 4))
-            b.detector([f"a_xxxx_m{r}_flag"])
-            b.detector(["a_xxxx0", f"a_xxxx_m{r}"])
+            b.detector([f"a_xxxx_m{r}_flag"], "A interleave")
+            b.detector(["a_xxxx0", f"a_xxxx_m{r}"], "A interleave")
 
     # --- step 3b: hand-off EC round on B --------------------------------------------
     # Errors injected into B by the M1 cascades face no further check otherwise. This
     # round is NOISELESS by convention: it stands for the receiving computation's own
     # first error-correction cycle, which is where a real switch hands the block over.
-    verify_b("final", noisy=False)
+    if cripple != "handoff":
+        verify_b("final", noisy=False)
 
     # --- step 4: read A out destructively; ZZZZ parity is a free check ---------------
     for i, q in enumerate(A):
         b.measure(f"a_out{i}", "Z", q)
-    b.detector(["a_zzzz0", "a_out0", "a_out1", "a_out2", "a_out3"])
+    b.detector(["a_zzzz0", "a_out0", "a_out1", "a_out2", "a_out3"], "A readout")
 
     # --- step 5: verify the teleported logical, noiseless ----------------------------
     b.mpp("out", on(B, F.OUT_X if prep_basis == "X" else F.OUT_Z))

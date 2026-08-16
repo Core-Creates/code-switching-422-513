@@ -1,16 +1,40 @@
 # FINDINGS
 
-Machine-checked audit of `code_switching_paper.docx` (Alcoser, 02/05/2026), and the
-Step 0 / Step 1 / Step 2 artifacts that replace its unverified constructions.
+Machine-checked record for the [[4,2,2]] to [[5,1,3]] code switch. Everything below is
+computed by the scripts in this directory; no claim here was typed by hand.
 
-Everything below is computed by the scripts in this directory. No claim here was
-typed by hand. Reproduce with:
+## Contents
+
+| part | what it covers |
+|---|---|
+| 1 | 16 numbered defects in the original manuscript, 5 of them fatal |
+| 2 | the derived encoder and its two independent verifications |
+| Lemma 1 | residual input errors are uncorrectable for every encoder |
+| 3 | Step 2: flag placement search, and the encoder sweep over 24 cascades |
+| 3b | the counting bound, and why every flag search was doomed |
+| 4 | scaling of the fault enumeration to gates of any arity |
+| 5 | recommended order of work (historical) |
+| 6 | the teleportation switch and its joint-measurement certificate |
+| 7 | the \|0>_L factory, and the corrected resource count |
+| 8 | end-to-end certificate, and the three composition gaps it exposed |
+| 9 | numerics: acceptance, logical error rate, and the measured exponent |
+| 10 | adversarial validation, and the simplification it found |
+
+Current headline numbers live in Part 10. Earlier parts record numbers as they stood when
+written, and where a later part supersedes one it says so.
+
+Reproduce with:
+
 
     python synthesize_encoder.py     # Step 0/1: conventions + encoder + 2 verifications
     python audit_paper_claims.py     # every load-bearing number in the manuscript
     python test_scaling.py           # fault-enumeration scaling tests
     python step2_flag_search.py      # Step 2: flag search + decoder synthesis
     python step2_encoder_sweep.py    # Step 2 outer loop: resynthesize and rerun
+    python step4_two_flag_search.py  # counting bound and exact set cover
+    python end_to_end.py             # the end-to-end certificate
+    python validate_certificate.py   # attack the certificate
+    python numerics.py               # Monte Carlo
 
 ---
 
@@ -582,3 +606,117 @@ protocol is practical. It also confirms the scope forced by Lemma 1: this is a
 state-preparation factory, and its yield is a first-class figure of merit rather than a
 remark. Anyone quoting the gate count without the acceptance rate is quoting half the
 cost.
+
+---
+
+## Part 10. Adversarial validation, and a simplification it found
+
+`validate_certificate.py` attacks the end-to-end certificate from the directions where it
+could be vacuous rather than true. A clean fault scan means nothing if the scan could not
+have come out dirty.
+
+| check | result |
+|---|---|
+| no gauge detectors (model rebuilt with tolerance off) | clean in both bases |
+| no dead detectors | 0 of 28 never fire |
+| observable is live | flips in 1,489 and 3,303 of 20,000 shots |
+| distance is exactly two | a two-fault logical failure exists in both bases |
+| every protection load-bearing | see below |
+
+The last check is the one that paid. Removing each protection in turn and requiring the
+scan to fail found that **three of the eight protections were not load-bearing at all**:
+the second round of A verification, the flag on the Zbar frame measurement, and the second
+B verification round after Zbar. Removing all three jointly still certifies.
+
+Numerics then settled whether they helped at second order, where the single-fault scan is
+blind. They do not:
+
+| p | variant | two-qubit gates | acceptance | p_L |
+|---|---|---|---|---|
+| 0.005 | full | 162 | 0.327 | 2.12e-04 |
+| 0.005 | simplified | 120 | **0.459** | 2.00e-04 |
+| 0.010 | full | 162 | 0.107 | 7.80e-04 |
+| 0.010 | simplified | 120 | **0.212** | 7.31e-04 |
+
+Same logical error rate within statistics, nearly double the yield, 42 fewer two-qubit
+gates. Those three protections were pure cost. **The simplified protocol is now the
+protocol**, and re-validation confirms all five surviving protections are load-bearing.
+
+This is worth recording as a methodological point, not just a result. The three were added
+during end-to-end debugging in a single batch, when the scan went from failing to passing.
+Adding protections until a check passes is how gadgets become over-engineered: nothing in
+that process tells you which addition did the work. Ablation does, and it should be a
+standard step rather than an afterthought.
+
+### Updated headline numbers
+
+- two-qubit gates: **120**, down from 162
+- detectors: 28, down from 43
+- single-fault mechanisms: 824, zero dangerous
+- acceptance: **86%** at p = 1e-3 and **21%** at p = 1e-2, up from 80% and 11%
+- fitted exponent: **2.17**, against 1.13 for the crippled control
+
+---
+
+## Part 11. Tuning, and a recommendation I had to withdraw
+
+Two questions the certificate cannot answer, in `tune_protocol.py`.
+
+### Repetition counts
+
+`r = 3` for the M1 and Zbar measurements was chosen by convention. Ablating it:
+
+| M1 rounds | Zbar rounds | 2q gates | certificate | acceptance | p_L (p = 5e-3) |
+|---|---|---|---|---|---|
+| 1 | 1 | 80 | fails |  |  |
+| 1 | 2 | 85 | fails |  |  |
+| 1 | 3 | 90 | fails |  |  |
+| 2 | 1 | 95 | fails |  |  |
+| 2 | 2 | 100 | certifies | 0.5317 | 3.699e-04 |
+| 2 | 3 | 105 | certifies | 0.5131 | 2.436e-04 |
+| 3 | 1 | 110 | fails |  |  |
+| 3 | 2 | 115 | certifies | 0.4753 | 2.244e-04 |
+| 3 | 3 | 120 | certifies | 0.4598 | 2.139e-04 |
+
+`r = 1` fails outright: with one round there is no round-to-round detector to catch a
+measurement flip. `r = 2` certifies, uses 20 fewer gates and yields 7 points more.
+
+**I initially recommended r = 2 on that basis, and it was wrong.** The tuning script
+measured acceptance and gate count but not logical error rate, and r = 2 pays for its
+savings with a factor of about 1.7 in p_L. For a factory whose product is a low-error
+encoded state, p_L is the objective and yield is the budget. The protocol keeps r = 3, and
+the script now measures the objective it is optimising.
+
+Zbar at r = 2 against r = 3 is within Poisson noise on these counts, so the extra round is
+neither justified nor ruled out by this data. It stays at 3 rather than churn on a null
+result.
+
+The lesson generalises past this protocol: an ablation is only as good as the metric it
+scores. Removing three protections earlier was right because p_L was unchanged and yield
+doubled. Removing a repetition round looked identical on the metrics I was watching and
+was not.
+
+### Where the yield goes, at p = 5e-3
+
+| stage | detectors | fire rate |
+|---|---|---|
+| B verify | 12 | 0.3336 |
+| A verify | 4 | 0.0868 |
+| A interleave | 4 | 0.1152 |
+| M1 flag | 3 | 0.0962 |
+| Zbar repeat | 2 | 0.0731 |
+| M1 repeat | 2 | 0.1129 |
+| A readout | 1 | 0.0737 |
+
+B's verification discards most, by a wide margin: it alone would cap acceptance at
+0.6664. That is where yield work would pay, and it is the
+first thing to look at if this protocol is ever run at scale.
+
+### Uncertainty on the measured exponent
+
+The exponent is now quoted with a bootstrap over the per-point error counts:
+**2.01 +/- 0.08** for the certified protocol against
+**1.11 +/- 0.01** for the crippled control, separating the two
+regimes by 11
+standard deviations. A slope quoted without an uncertainty is not a claim a referee can
+check.

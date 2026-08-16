@@ -1,12 +1,12 @@
 {
   "X": {
-    "mechanisms": 609,
+    "mechanisms": 383,
     "dangerous": 0
   },
   "Z": {
-    "mechanisms": 667,
+    "mechanisms": 441,
     "dangerous": 0
   },
-  "two_qubit_gates": 162,
+  "two_qubit_gates": 120,
   "positive_control_dangerous": 1
 }

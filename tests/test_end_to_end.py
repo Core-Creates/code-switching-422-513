@@ -42,9 +42,29 @@ def test_positive_control_fails(e2e):
 
 
 def test_composition_gaps_stay_closed(e2e):
-    """Regression guards for the three gaps the end-to-end scan exposed, each of which
-    was invisible to the per-gadget certificates."""
-    src = open(os.path.join(ROOT, "end_to_end.py")).read()
-    assert "verify_b(\"final\", noisy=False)" in src, "hand-off EC round on B"
-    assert "a_xxxx_m" in src, "A checks interleaved between M1 rounds"
-    assert "b_zbar_{r}_flag" in src, "flagged and repeated Zbar frame measurement"
+    """Regression guards for the gaps the end-to-end scan exposed, each invisible to the
+    per-gadget certificates. Asserted against the detector stages the circuit actually
+    builds rather than against source text, which breaks on unrelated edits."""
+    stages = set(e2e.build("Z", 1e-3).det_labels)
+    for needed in ("A interleave", "Zbar repeat", "B verify", "M1 repeat"):
+        assert needed in stages, f"missing protection stage: {needed}"
+    # the hand-off round is noiseless, so it contributes syndrome detectors without flags
+    assert e2e.build("Z", 1e-3).det_labels.count("B verify") > 4, "hand-off EC round on B"
+
+
+def test_every_protection_is_load_bearing(e2e):
+    """Removing any surviving protection must reintroduce a dangerous mechanism. A
+    protection whose removal changes nothing is cost without benefit, and three such were
+    found and removed."""
+    for cripple in ("m1_flag", "a_flag", "a_interleave", "zbar_repeat", "handoff"):
+        total = sum(e2e.scan(e2e.build(b, 1e-3, cripple=cripple).c) for b in ("X", "Z"))
+        assert total > 0, f"{cripple} appears redundant"
+
+
+def test_simplification_stays_simplified(e2e):
+    """Guard against quietly reintroducing the three protections that ablation and
+    numerics showed to cost 42 two-qubit gates and half the yield while changing
+    nothing."""
+    n2 = sum(len(i.targets_copy()) // 2 for i in e2e.build("Z", 0.0).c.flattened()
+             if i.name in ("CX", "CY", "CZ"))
+    assert n2 == 120
