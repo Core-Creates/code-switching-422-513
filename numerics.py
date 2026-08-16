@@ -36,6 +36,28 @@ def run(basis, p, shots, cripple=None):
     return n_acc, n_err
 
 
+def bootstrap_slope(rows, draws=2000, seed=5):
+    """Uncertainty on the exponent. Each point's error count is binomial in the accepted
+    shots, so we resample counts and refit. A slope quoted without this is not a claim a
+    referee can check."""
+    rng = np.random.default_rng(seed)
+    pts = [(r["p"], r["accepted"], r["errors"]) for r in rows if r["errors"]]
+    if len(pts) < 2:
+        return float("nan"), float("nan")
+    slopes = []
+    for _ in range(draws):
+        xs, ys = [], []
+        for p_, n_acc, n_err in pts:
+            resampled = rng.binomial(n_acc, n_err / n_acc)
+            if resampled:
+                xs.append(p_)
+                ys.append(resampled / n_acc)
+        s_ = fit_slope(xs, ys)
+        if s_ == s_:
+            slopes.append(s_)
+    return float(np.mean(slopes)), float(np.std(slopes))
+
+
 def fit_slope(xs, ys):
     """least squares slope of log y against log x, over points with y > 0"""
     pts = [(math.log(x), math.log(y)) for x, y in zip(xs, ys) if y > 0]
@@ -71,17 +93,26 @@ for label, cripple in (("certified", None), ("M1 flag removed", "m1_flag")):
             ps_used.append(p)
             pls.append(pl)
     slope = fit_slope(ps_used, pls)
-    print(f"   fitted slope of log p_L vs log p: {slope:.2f}")
-    results[label] = {"rows": rows, "slope": slope}
+    boot_mean, boot_sd = bootstrap_slope(rows)
+    print(f"   fitted slope of log p_L vs log p: {slope:.2f} "
+          f"(bootstrap {boot_mean:.2f} +/- {boot_sd:.2f}, {2000} resamples)")
+    results[label] = {"rows": rows, "slope": slope, "slope_sd": boot_sd,
+                      "slope_bootstrap_mean": boot_mean}
     print()
 
 cert_slope = results["certified"]["slope"]
 crip_slope = results["M1 flag removed"]["slope"]
 print("=" * 70)
-print(f"certified protocol slope {cert_slope:.2f}, expected near 2 because the "
-      f"enumeration found\n   no single-fault logical error")
-print(f"crippled protocol slope  {crip_slope:.2f}, expected near 1 because removing the "
-      f"M1 flag\n   reintroduces one")
+cert_sd = results["certified"]["slope_sd"]
+crip_sd = results["M1 flag removed"]["slope_sd"]
+sep = abs(cert_slope - crip_slope) / (cert_sd ** 2 + crip_sd ** 2) ** 0.5
+print(f"certified protocol slope {cert_slope:.2f} +/- {cert_sd:.2f}, expected near 2 "
+      f"because the enumeration
+   found no single-fault logical error")
+print(f"crippled protocol slope  {crip_slope:.2f} +/- {crip_sd:.2f}, expected near 1 "
+      f"because removing the M1 flag
+   reintroduces one")
+print(f"the two regimes are separated by {sep:.0f} sigma")
 
 # pseudothreshold: where p_L crosses p
 rows = results["certified"]["rows"]

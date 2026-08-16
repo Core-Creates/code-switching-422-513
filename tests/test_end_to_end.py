@@ -43,12 +43,13 @@ def test_positive_control_fails(e2e):
 
 def test_composition_gaps_stay_closed(e2e):
     """Regression guards for the gaps the end-to-end scan exposed, each invisible to the
-    per-gadget certificates. Zbar is repeated but NOT flagged: ablation showed the flag
-    there to be pure cost."""
-    src = open(os.path.join(ROOT, "end_to_end.py")).read()
-    assert 'verify_b("final", noisy=False)' in src, "hand-off EC round on B"
-    assert "a_xxxx_m" in src, "A checks interleaved between M1 rounds"
-    assert 'b.detector([f"b_zbar_{r-1}", f"b_zbar_{r}"])' in src, "Zbar repetition"
+    per-gadget certificates. Asserted against the detector stages the circuit actually
+    builds rather than against source text, which breaks on unrelated edits."""
+    stages = set(e2e.build("Z", 1e-3).det_labels)
+    for needed in ("A interleave", "Zbar repeat", "B verify", "M1 repeat"):
+        assert needed in stages, f"missing protection stage: {needed}"
+    # the hand-off round is noiseless, so it contributes syndrome detectors without flags
+    assert e2e.build("Z", 1e-3).det_labels.count("B verify") > 4, "hand-off EC round on B"
 
 
 def test_every_protection_is_load_bearing(e2e):

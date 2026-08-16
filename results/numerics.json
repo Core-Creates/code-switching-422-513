@@ -3,94 +3,98 @@
     "rows": [
       {
         "p": 0.001,
-        "acceptance": 0.85606775,
-        "accepted": 3424271,
-        "errors": 17,
-        "p_logical": 4.964560339996455e-06
+        "acceptance": 0.855955,
+        "accepted": 3423820,
+        "errors": 24,
+        "p_logical": 7.009714295728164e-06
       },
       {
         "p": 0.002,
-        "acceptance": 0.7325785,
-        "accepted": 2930314,
-        "errors": 76,
-        "p_logical": 2.59357870862986e-05
+        "acceptance": 0.7328055,
+        "accepted": 2931222,
+        "errors": 92,
+        "p_logical": 3.138622731406901e-05
       },
       {
         "p": 0.003,
-        "acceptance": 0.62712725,
-        "accepted": 2508509,
-        "errors": 155,
-        "p_logical": 6.178969260225895e-05
+        "acceptance": 0.6276035,
+        "accepted": 2510414,
+        "errors": 137,
+        "p_logical": 5.457267207719523e-05
       },
       {
         "p": 0.005,
-        "acceptance": 0.4602705,
-        "accepted": 1841082,
-        "errors": 346,
-        "p_logical": 0.00018793296550615344
+        "acceptance": 0.4597135,
+        "accepted": 1838854,
+        "errors": 278,
+        "p_logical": 0.00015118111606467942
       },
       {
         "p": 0.007,
-        "acceptance": 0.3370845,
-        "accepted": 1348338,
-        "errors": 477,
-        "p_logical": 0.00035376886211024237
+        "acceptance": 0.33705225,
+        "accepted": 1348209,
+        "errors": 497,
+        "p_logical": 0.0003686372068425593
       },
       {
         "p": 0.01,
-        "acceptance": 0.2119435,
-        "accepted": 847774,
-        "errors": 639,
-        "p_logical": 0.0007537386143005093
+        "acceptance": 0.21178525,
+        "accepted": 847141,
+        "errors": 645,
+        "p_logical": 0.0007613844684651079
       }
     ],
-    "slope": 2.1678929272344596
+    "slope": 2.011884351405556,
+    "slope_sd": 0.07876167313120652,
+    "slope_bootstrap_mean": 2.022739277763448
   },
   "M1 flag removed": {
     "rows": [
       {
         "p": 0.001,
-        "acceptance": 0.8659545,
-        "accepted": 3463818,
-        "errors": 829,
-        "p_logical": 0.00023933128126246817
+        "acceptance": 0.86637,
+        "accepted": 3465480,
+        "errors": 875,
+        "p_logical": 0.00025249027551738865
       },
       {
         "p": 0.002,
-        "acceptance": 0.750214,
-        "accepted": 3000856,
-        "errors": 1527,
-        "p_logical": 0.0005088548067618039
+        "acceptance": 0.7505245,
+        "accepted": 3002098,
+        "errors": 1523,
+        "p_logical": 0.0005073118865540033
       },
       {
         "p": 0.003,
-        "acceptance": 0.64966875,
-        "accepted": 2598675,
-        "errors": 2032,
-        "p_logical": 0.0007819369486372863
+        "acceptance": 0.650353,
+        "accepted": 2601412,
+        "errors": 2023,
+        "p_logical": 0.0007776545968112702
       },
       {
         "p": 0.005,
-        "acceptance": 0.48754925,
-        "accepted": 1950197,
-        "errors": 2724,
-        "p_logical": 0.0013967819661295756
+        "acceptance": 0.48760175,
+        "accepted": 1950407,
+        "errors": 2700,
+        "p_logical": 0.0013843264508382096
       },
       {
         "p": 0.007,
-        "acceptance": 0.3658695,
-        "accepted": 1463478,
-        "errors": 3030,
-        "p_logical": 0.002070410351231792
+        "acceptance": 0.36588725,
+        "accepted": 1463549,
+        "errors": 3053,
+        "p_logical": 0.0020860251347922074
       },
       {
         "p": 0.01,
-        "acceptance": 0.2381525,
-        "accepted": 952610,
-        "errors": 3100,
-        "p_logical": 0.003254217360724746
+        "acceptance": 0.2376905,
+        "accepted": 950762,
+        "errors": 3092,
+        "p_logical": 0.0032521282928850755
       }
     ],
-    "slope": 1.1270155082345799
+    "slope": 1.1092694372958805,
+    "slope_sd": 0.013848101909044548,
+    "slope_bootstrap_mean": 1.109656292388699
   }
 }

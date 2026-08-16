@@ -655,3 +655,68 @@ standard step rather than an afterthought.
 - single-fault mechanisms: 824, zero dangerous
 - acceptance: **86%** at p = 1e-3 and **21%** at p = 1e-2, up from 80% and 11%
 - fitted exponent: **2.17**, against 1.13 for the crippled control
+
+---
+
+## Part 11. Tuning, and a recommendation I had to withdraw
+
+Two questions the certificate cannot answer, in `tune_protocol.py`.
+
+### Repetition counts
+
+`r = 3` for the M1 and Zbar measurements was chosen by convention. Ablating it:
+
+| M1 rounds | Zbar rounds | 2q gates | certificate | acceptance | p_L (p = 5e-3) |
+|---|---|---|---|---|---|
+| 1 | 1 | 80 | fails |  |  |
+| 1 | 2 | 85 | fails |  |  |
+| 1 | 3 | 90 | fails |  |  |
+| 2 | 1 | 95 | fails |  |  |
+| 2 | 2 | 100 | certifies | 0.5317 | 3.699e-04 |
+| 2 | 3 | 105 | certifies | 0.5131 | 2.436e-04 |
+| 3 | 1 | 110 | fails |  |  |
+| 3 | 2 | 115 | certifies | 0.4753 | 2.244e-04 |
+| 3 | 3 | 120 | certifies | 0.4598 | 2.139e-04 |
+
+`r = 1` fails outright: with one round there is no round-to-round detector to catch a
+measurement flip. `r = 2` certifies, uses 20 fewer gates and yields 7 points more.
+
+**I initially recommended r = 2 on that basis, and it was wrong.** The tuning script
+measured acceptance and gate count but not logical error rate, and r = 2 pays for its
+savings with a factor of about 1.7 in p_L. For a factory whose product is a low-error
+encoded state, p_L is the objective and yield is the budget. The protocol keeps r = 3, and
+the script now measures the objective it is optimising.
+
+Zbar at r = 2 against r = 3 is within Poisson noise on these counts, so the extra round is
+neither justified nor ruled out by this data. It stays at 3 rather than churn on a null
+result.
+
+The lesson generalises past this protocol: an ablation is only as good as the metric it
+scores. Removing three protections earlier was right because p_L was unchanged and yield
+doubled. Removing a repetition round looked identical on the metrics I was watching and
+was not.
+
+### Where the yield goes, at p = 5e-3
+
+| stage | detectors | fire rate |
+|---|---|---|
+| B verify | 12 | 0.3336 |
+| A verify | 4 | 0.0868 |
+| A interleave | 4 | 0.1152 |
+| M1 flag | 3 | 0.0962 |
+| Zbar repeat | 2 | 0.0731 |
+| M1 repeat | 2 | 0.1129 |
+| A readout | 1 | 0.0737 |
+
+B's verification discards most, by a wide margin: it alone would cap acceptance at
+0.6664. That is where yield work would pay, and it is the
+first thing to look at if this protocol is ever run at scale.
+
+### Uncertainty on the measured exponent
+
+The exponent is now quoted with a bootstrap over the per-point error counts:
+**2.01 +/- 0.08** for the certified protocol against
+**1.11 +/- 0.01** for the crippled control, separating the two
+regimes by 11
+standard deviations. A slope quoted without an uncertainty is not a claim a referee can
+check.

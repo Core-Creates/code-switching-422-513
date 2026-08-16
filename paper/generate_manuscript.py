@@ -418,7 +418,9 @@ table(["p", "acceptance", "accepted shots", "logical errors", "p_L"],
       [[f"{r['p']:.4f}", f"{r['acceptance']:.3f}", f"{r['accepted']:,}",
         f"{r['errors']:,}", f"{r['p_logical']:.2e}"] for r in CERT["rows"]])
 para(
-    f"The fitted slope of log p_L against log p is {CERT['slope']:.2f}. This is an "
+    f"The fitted slope of log p_L against log p is {CERT['slope']:.2f} +/- "
+    f"{CERT['slope_sd']:.2f}, from a bootstrap over the per-point error counts. This is "
+    f"an "
     "independent check on the enumeration rather than a restatement of it: the "
     "enumeration is combinatorial and forces the leading term to be quadratic, and the "
     "Monte Carlo measures the exponent statistically. A variant with the M1 flag removed, "

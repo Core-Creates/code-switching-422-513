@@ -25,9 +25,9 @@ finds no covering pair. A greedy cover needs nine bits.
 
 **A teleportation-based switch does certify.** End-to-end single-fault enumeration over 824
 mechanisms finds no undetectable logical error in either logical basis, corroborated by a
-measured error-rate exponent of 2.17 against 1.13 for a deliberately crippled control. It
-uses 120 two-qubit gates, and post-selection accepts 86 percent of shots at p = 1e-3 and 21
-percent at p = 1e-2.
+measured error-rate exponent of 2.01 +/- 0.08 against 1.11 +/- 0.01 for a
+deliberately crippled control. It uses 120 two-qubit gates, and post-selection accepts
+86% of shots at p = 1e-3 and 21% at p = 1e-2.
 
 The structural reason the second works where the first cannot: in a measurement cascade
 every gate shares the ancilla as control, so a flag pair commutes with the cascade and
@@ -58,6 +58,7 @@ encoders.**
 | `end_to_end.py` | the whole protocol as one circuit, with the end-to-end certificate |
 | `validate_certificate.py` | adversarial validation: is the certificate vacuous or true? |
 | `numerics.py` | Monte Carlo: acceptance and logical error rate against p |
+| `tune_protocol.py` | ablates the repetition counts and attributes the yield loss by stage |
 | `qiskit_export.py` | translation to Qiskit and cross-check on Aer |
 | **Output** | |
 | `paper/generate_manuscript.py` | generates the manuscript from the artifacts |

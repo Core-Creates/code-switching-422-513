@@ -1,0 +1,145 @@
+{
+  "rounds": [
+    {
+      "m1_rounds": 1,
+      "zbar_rounds": 1,
+      "two_qubit_gates": 80,
+      "dangerous": 2,
+      "acceptance": null,
+      "p_logical": null,
+      "errors": 0
+    },
+    {
+      "m1_rounds": 1,
+      "zbar_rounds": 2,
+      "two_qubit_gates": 85,
+      "dangerous": 1,
+      "acceptance": null,
+      "p_logical": null,
+      "errors": 0
+    },
+    {
+      "m1_rounds": 1,
+      "zbar_rounds": 3,
+      "two_qubit_gates": 90,
+      "dangerous": 1,
+      "acceptance": null,
+      "p_logical": null,
+      "errors": 0
+    },
+    {
+      "m1_rounds": 2,
+      "zbar_rounds": 1,
+      "two_qubit_gates": 95,
+      "dangerous": 1,
+      "acceptance": null,
+      "p_logical": null,
+      "errors": 0
+    },
+    {
+      "m1_rounds": 2,
+      "zbar_rounds": 2,
+      "two_qubit_gates": 100,
+      "dangerous": 0,
+      "acceptance": 0.531675,
+      "p_logical": 0.00036990015830472875,
+      "errors": 118
+    },
+    {
+      "m1_rounds": 2,
+      "zbar_rounds": 3,
+      "two_qubit_gates": 105,
+      "dangerous": 0,
+      "acceptance": 0.5131283333333333,
+      "p_logical": 0.000243603776832956,
+      "errors": 75
+    },
+    {
+      "m1_rounds": 3,
+      "zbar_rounds": 1,
+      "two_qubit_gates": 110,
+      "dangerous": 1,
+      "acceptance": null,
+      "p_logical": null,
+      "errors": 0
+    },
+    {
+      "m1_rounds": 3,
+      "zbar_rounds": 2,
+      "two_qubit_gates": 115,
+      "dangerous": 0,
+      "acceptance": 0.4753366666666667,
+      "p_logical": 0.0002244023534196815,
+      "errors": 64
+    },
+    {
+      "m1_rounds": 3,
+      "zbar_rounds": 3,
+      "two_qubit_gates": 120,
+      "dangerous": 0,
+      "acceptance": 0.45982,
+      "p_logical": 0.00021385179708001683,
+      "errors": 59
+    }
+  ],
+  "best_rounds": {
+    "m1_rounds": 2,
+    "zbar_rounds": 2,
+    "two_qubit_gates": 100,
+    "dangerous": 0,
+    "acceptance": 0.531675,
+    "p_logical": 0.00036990015830472875,
+    "errors": 118
+  },
+  "stages": [
+    {
+      "stage": "B verify",
+      "detectors": 12,
+      "fire_rate": 0.33358333333333334,
+      "acceptance_if_only_this": 0.6664166666666667,
+      "acceptance_without_this": 0.6285383333333333
+    },
+    {
+      "stage": "A verify",
+      "detectors": 4,
+      "fire_rate": 0.08678166666666666,
+      "acceptance_if_only_this": 0.9132183333333334,
+      "acceptance_without_this": 0.489945
+    },
+    {
+      "stage": "A interleave",
+      "detectors": 4,
+      "fire_rate": 0.11516166666666666,
+      "acceptance_if_only_this": 0.8848383333333334,
+      "acceptance_without_this": 0.49417666666666665
+    },
+    {
+      "stage": "M1 flag",
+      "detectors": 3,
+      "fire_rate": 0.09621333333333333,
+      "acceptance_if_only_this": 0.9037866666666666,
+      "acceptance_without_this": 0.4795433333333333
+    },
+    {
+      "stage": "Zbar repeat",
+      "detectors": 2,
+      "fire_rate": 0.07313166666666666,
+      "acceptance_if_only_this": 0.9268683333333333,
+      "acceptance_without_this": 0.47678333333333334
+    },
+    {
+      "stage": "M1 repeat",
+      "detectors": 2,
+      "fire_rate": 0.112905,
+      "acceptance_if_only_this": 0.887095,
+      "acceptance_without_this": 0.48117333333333334
+    },
+    {
+      "stage": "A readout",
+      "detectors": 1,
+      "fire_rate": 0.07371666666666667,
+      "acceptance_if_only_this": 0.9262833333333333,
+      "acceptance_without_this": 0.4724316666666667
+    }
+  ]
+}

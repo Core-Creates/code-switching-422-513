@@ -1,9 +1,9 @@
 {
   "strict_model_clean": true,
   "dead_detectors_X": 0,
-  "observable_flips_X": 1361,
+  "observable_flips_X": 1084,
   "dead_detectors_Z": 0,
-  "observable_flips_Z": 2499,
+  "observable_flips_Z": 1946,
   "ablations": {
     "None": {
       "X": 0,

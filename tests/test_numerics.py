@@ -58,3 +58,16 @@ def test_acceptance_rate_is_reported_and_falls_with_p(saved):
     assert accs[-1] < 0.30         # p = 1e-2
     # the simplified protocol nearly doubled the yield at p = 1e-2
     assert accs[-1] > 0.15
+
+
+def test_exponent_is_quoted_with_an_uncertainty(saved):
+    """A slope without an error bar is not a checkable claim."""
+    for key in ("certified", "M1 flag removed"):
+        assert "slope_sd" in saved[key]
+        assert 0 < saved[key]["slope_sd"] < 0.5
+
+
+def test_the_two_regimes_are_cleanly_separated(saved):
+    c, k = saved["certified"], saved["M1 flag removed"]
+    sep = abs(c["slope"] - k["slope"]) / (c["slope_sd"] ** 2 + k["slope_sd"] ** 2) ** 0.5
+    assert sep > 5, "quadratic and linear scaling must be distinguishable"
