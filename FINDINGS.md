@@ -1,16 +1,40 @@
 # FINDINGS
 
-Machine-checked audit of `code_switching_paper.docx` (Alcoser, 02/05/2026), and the
-Step 0 / Step 1 / Step 2 artifacts that replace its unverified constructions.
+Machine-checked record for the [[4,2,2]] to [[5,1,3]] code switch. Everything below is
+computed by the scripts in this directory; no claim here was typed by hand.
 
-Everything below is computed by the scripts in this directory. No claim here was
-typed by hand. Reproduce with:
+## Contents
+
+| part | what it covers |
+|---|---|
+| 1 | 16 numbered defects in the original manuscript, 5 of them fatal |
+| 2 | the derived encoder and its two independent verifications |
+| Lemma 1 | residual input errors are uncorrectable for every encoder |
+| 3 | Step 2: flag placement search, and the encoder sweep over 24 cascades |
+| 3b | the counting bound, and why every flag search was doomed |
+| 4 | scaling of the fault enumeration to gates of any arity |
+| 5 | recommended order of work (historical) |
+| 6 | the teleportation switch and its joint-measurement certificate |
+| 7 | the \|0>_L factory, and the corrected resource count |
+| 8 | end-to-end certificate, and the three composition gaps it exposed |
+| 9 | numerics: acceptance, logical error rate, and the measured exponent |
+| 10 | adversarial validation, and the simplification it found |
+
+Current headline numbers live in Part 10. Earlier parts record numbers as they stood when
+written, and where a later part supersedes one it says so.
+
+Reproduce with:
+
 
     python synthesize_encoder.py     # Step 0/1: conventions + encoder + 2 verifications
     python audit_paper_claims.py     # every load-bearing number in the manuscript
     python test_scaling.py           # fault-enumeration scaling tests
     python step2_flag_search.py      # Step 2: flag search + decoder synthesis
     python step2_encoder_sweep.py    # Step 2 outer loop: resynthesize and rerun
+    python step4_two_flag_search.py  # counting bound and exact set cover
+    python end_to_end.py             # the end-to-end certificate
+    python validate_certificate.py   # attack the certificate
+    python numerics.py               # Monte Carlo
 
 ---
 

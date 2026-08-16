@@ -67,3 +67,41 @@ no gate is ever typed by hand into the manuscript.
 
 "approximately N gates", "about N CNOTs", "~15", "20-25 layers" for any circuit that
 exists as a file. Counts are integers read off the circuit.
+
+## Teleportation switch conventions
+
+Block A is the [[4,2,2]] block on `q1..q4`. Block B is a fresh [[5,1,3]] block on
+`b1..b5`. The switch teleports logical qubit 1 of A into B by joint logical measurement,
+so there is no re-encoding Clifford in the protocol and no `Z2bar` measurement: the second
+logical qubit is discarded with the block.
+
+- `M1 = X1bar_A tensor Xbar_B = XXII tensor XXXXX`, weight 7, flag protected and repeated
+- `M2 = Z1bar_A = ZIZI`, obtained from A's destructive Z-basis readout at no two-qubit cost
+- `b5` is the recorded outcome of the `Zbar` measurement on B
+- frame update on B: `Xbar^(m2 + b5) Zbar^(m1)`
+
+Two rules that are load-bearing and easy to violate:
+
+**B need only be in the code space.** Which logical state it holds is recorded in `b5`,
+not required, so a logical fault during preparation is absorbed rather than fatal. This is
+what makes the factory cheap.
+
+**`Zbar` must be measured AFTER the g1..g4 verification.** A logical fault arriving after
+`b5` is recorded leaves the frame bit stale, and a stale frame bit is a logical error on
+the output rather than an absorbed one. Ordering is part of the theorem.
+
+## Protections, and which are load-bearing
+
+Ablation is the authority here, not intuition. Removing any of these reintroduces an
+undetectable single-fault logical error:
+
+- flag on the joint measurement M1
+- flags on A's verification cascades
+- A's XXXX check interleaved between the M1 rounds
+- repetition of the Zbar measurement
+- the hand-off EC round on B
+
+These three were carried for a while and removed once ablation showed they changed
+nothing, at a saving of 42 two-qubit gates and a near doubling of yield: a second round of
+A verification, a flag on the Zbar cascade, and a second B verification round after Zbar.
+Do not reintroduce them without an ablation showing they earn their place.

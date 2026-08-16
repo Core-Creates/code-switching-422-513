@@ -41,3 +41,29 @@ def test_input_frame_matches_phase2_projection():
     # ZZIII is Z2bar padded, IIZZI is Z2bar times the ZZZZ stabilizer
     assert ps("ZZIII") * ps("IIZZI") == ps("ZZZZI") or \
            str(ps("ZZIII") * ps("IIZZI")).lstrip("+-") == "ZZZZ_"
+
+
+def test_documentation_lists_every_script():
+    """The README layout table is the entry point. A script missing from it is a script
+    nobody will run."""
+    import glob
+    import os
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    readme = open(os.path.join(root, "README.md"), encoding="utf-8").read()
+    scripts = [os.path.relpath(p, root).replace("\\", "/")
+               for p in glob.glob(os.path.join(root, "*.py"))
+               + glob.glob(os.path.join(root, "paper", "*.py"))]
+    missing = [s for s in scripts if os.path.basename(s) not in readme]
+    assert not missing, f"not documented in README: {missing}"
+
+
+def test_conventions_cover_the_current_protocol():
+    """CONVENTIONS.md is the single source of truth, so it must describe the protocol
+    that actually exists, not the one that was superseded."""
+    import os
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    text = open(os.path.join(root, "CONVENTIONS.md"), encoding="utf-8").read()
+    for phrase in ("Xbar^(m2 + b5) Zbar^(m1)",
+                   "Zbar` must be measured AFTER",
+                   "load-bearing"):
+        assert phrase in text, f"CONVENTIONS.md does not cover: {phrase}"
