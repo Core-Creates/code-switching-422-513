@@ -91,3 +91,31 @@ weight restriction is reported by `fault_model_summary`, never applied silently.
 3. The decoder is an output of the fault enumeration, never an input to it.
 4. Bounded searches log their bounds. A cap that is not logged reads as coverage.
 5. "Approximately N gates" is banned vocabulary for a circuit that exists as a file.
+
+## Running it on Qiskit
+
+    python qiskit_export.py
+
+`qiskit_export.py` translates the certified stim circuit into a `QuantumCircuit` rather
+than reimplementing it, so there is no second copy to keep correct. Two properties of the
+protocol make the port straightforward:
+
+- **No feed-forward.** The Pauli frame update is classical bookkeeping applied to the
+  final readout, not a conditional gate, so the exported circuit is static. A test asserts
+  that no conditional operation appears. This matters on hardware where dynamic circuits
+  are slow or restricted.
+- **Detectors become bit parities.** Qiskit has no detector concept, so each becomes an
+  index set over the shot bitstring; a shot is accepted when all 43 parities are zero.
+
+Noise is translated instruction by instruction with stim's exact probabilities, so the
+Aer comparison tests the translation rather than two simulators' noise conventions.
+
+Cross-check results: the noiseless protocol is deterministic in Aer in both logical bases;
+all 43 per-detector firing rates agree with stim within shot noise (largest gap 0.0071
+against a 4-sigma band of 0.0141); and acceptance agrees, landing at 0.7 sigma at 120,000
+shots.
+
+**Hardware caveat.** The certificate covers this circuit. Transpiling onto a restricted
+coupling map inserts SWAPs, three CX gates apiece that the fault enumeration never saw, so
+a transpiled circuit is not covered and would need re-enumerating against the device
+graph. All-to-all hardware avoids the issue.

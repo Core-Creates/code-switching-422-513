@@ -51,5 +51,12 @@ def test_no_claim_of_the_disproved_theorem(text):
 
 def test_limitations_are_stated(text):
     assert "Limitations" in text
-    for phrase in ("capped", "single faults"):
+    for phrase in ("single faults", "no lower bound above two bits", "noiseless"):
         assert phrase in text
+
+
+def test_search_is_described_as_exhaustive_where_it_is(text):
+    """The size-4 cap was removed, so the paper must say exhaustive rather than hedge,
+    and it must still name the bounds that remain."""
+    assert "exhaustive at two, three and four couplings" in text
+    assert "two-flag stage ran on the default cascade" in text

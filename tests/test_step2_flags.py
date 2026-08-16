@@ -115,3 +115,24 @@ def test_no_widened_single_flag_certifies(enc):
     assert sum(v for _, v in stats.values()) == 17287
     assert not any(r[0] == 0 for r in results)
     assert results[0][0] == 16
+
+
+def test_size4_flag_family_was_searched_exhaustively():
+    """The size-4 cap is gone: the whole primitive space was enumerated, so the
+    two-flag negative result cannot be an artifact of sampling."""
+    import json
+    st = json.load(open(os.path.join(ROOT, "results", "step4_two_flag_summary.json")))
+    assert st["candidates"] == 867694
+    assert st["distinct_coverages"] == 5384
+    assert st["covering_pairs_found"] == 0
+    assert st["single_flag_full_cover"] == 0
+
+
+@pytest.mark.slow
+def test_size4_space_size_is_stable(enc):
+    """Pins the size of the space so a change in the prefilter cannot silently shrink it."""
+    counts = {}
+    for kind in ("X", "Z"):
+        keys = FS.coupling_keys(enc, kind)
+        counts[kind] = sum(1 for _ in FS.zero_sum_subsets(keys, 4, primitive=True))
+    assert counts == {"X": 477273, "Z": 372108}
