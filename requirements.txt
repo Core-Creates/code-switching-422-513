@@ -1,3 +1,7 @@
 stim==1.16.0
 numpy==2.3.5
 pytest==8.4.1
+qiskit==2.5.2
+qiskit-aer==0.17.2
+matplotlib==3.10.5
+python-docx==1.2.0

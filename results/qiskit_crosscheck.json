@@ -1,0 +1,29 @@
+[
+  {
+    "p": 0.003,
+    "aer_acceptance": 0.5034,
+    "stim_acceptance": 0.51066375,
+    "aer_p_logical": 9.932459276916965e-05,
+    "stim_p_logical": 6.266354328068127e-05,
+    "aer_accepted": 10068,
+    "aer_errors": 1
+  },
+  {
+    "p": 0.005,
+    "aer_acceptance": 0.3169,
+    "stim_acceptance": 0.326022,
+    "aer_p_logical": 0.0004733354370463869,
+    "stim_p_logical": 0.00019170485427363797,
+    "aer_accepted": 6338,
+    "aer_errors": 3
+  },
+  {
+    "p": 0.01,
+    "aer_acceptance": 0.1002,
+    "stim_acceptance": 0.10671025,
+    "aer_p_logical": 0.000499001996007984,
+    "stim_p_logical": 0.0008316914260813746,
+    "aer_accepted": 2004,
+    "aer_errors": 1
+  }
+]
